@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-title" content="Chess Clock">
+<meta name="description" content="FIDE標準の持ち時間に対応したチェスクロック。休憩ポーズ付き。">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" href="./icon-512.png" sizes="512x512" type="image/png">
+<title>Chess Clock</title>
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
+  font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
+  user-select:none;-webkit-user-select:none;overscroll-behavior:none;touch-action:manipulation}
+#app{display:flex;flex-direction:column;height:100dvh;
+  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+
+.side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;background:#171b22;transition:background .12s ease;min-height:0;cursor:pointer}
+.side.idle{background:#12151a}
+.side.active{background:#14532d}
+.side.low.active{background:#7f1d1d}
+.side.flagged{background:#450a0a}
+#top{transform:rotate(180deg)}
+
+.name{font-size:13px;letter-spacing:.14em;color:#8b95a5;margin-bottom:6px;font-weight:600}
+.time{font-size:min(20vw,17vh);font-weight:600;line-height:1;letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";color:#f4f6f9}
+.side.idle .time{color:#6b7480}
+.meta{margin-top:10px;font-size:13px;color:#93a0b1;height:18px;letter-spacing:.02em}
+.side.active .meta{color:#cfe6d8}
+.side.low.active .meta{color:#fecaca}
+.badge{position:absolute;top:14px;right:16px;font-size:11px;padding:3px 8px;border-radius:99px;
+  background:rgba(255,255,255,.1);color:#cbd5e1;letter-spacing:.06em}
+
+#bar{height:72px;flex:none;background:#000;display:flex;align-items:center;justify-content:center;gap:10px;position:relative}
+.btn{border:none;background:#232a34;color:#e7ecf3;border-radius:14px;padding:0 18px;height:46px;
+  font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px;font-family:inherit}
+.btn:active{background:#323b48}
+.btn.wide{flex:1;max-width:190px;justify-content:center;background:#2563eb}
+.btn.wide:active{background:#1d4ed8}
+.btn.icon{width:46px;padding:0;justify-content:center;font-size:19px}
+#breakinfo{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:10px;color:#64748b;letter-spacing:.06em}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:20;display:none;
+  flex-direction:column;align-items:center;justify-content:center;padding:28px;
+  padding-top:calc(28px + env(safe-area-inset-top));padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+.overlay.show{display:flex}
+#pauseOv .big{font-size:20px;font-weight:700;letter-spacing:.08em;color:#fbbf24}
+#pauseOv .clock{font-size:64px;font-weight:600;font-variant-numeric:tabular-nums;margin:14px 0 4px}
+#pauseOv .sub{font-size:13px;color:#8b95a5;margin-bottom:30px}
+#pauseOv .btn.wide{max-width:260px;width:100%;height:58px;font-size:17px;background:#16a34a}
+
+#setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#setOv h2{font-size:17px;margin:0 0 4px;align-self:flex-start}
+#setOv .hint{font-size:12px;color:#8b95a5;margin:0 0 18px;align-self:flex-start;line-height:1.6}
+.opt{width:100%;max-width:440px;background:#161b22;border:1.5px solid #262e3a;border-radius:14px;
+  padding:13px 15px;margin-bottom:9px;display:flex;flex-direction:column;gap:3px}
+.opt.sel{border-color:#3b82f6;background:#132033}
+.opt .t{font-size:15px;font-weight:600}
+.opt .d{font-size:12px;color:#93a0b1}
+#customBox{width:100%;max-width:440px;display:none;gap:9px;flex-direction:column;margin:2px 0 10px}
+#customBox.show{display:flex}
+.row{display:flex;align-items:center;justify-content:space-between;background:#12161c;
+  border-radius:11px;padding:10px 14px;font-size:14px;color:#cbd5e1}
+.row input{width:86px;background:#1e252f;border:1px solid #2d3643;color:#fff;border-radius:8px;
+  padding:8px 10px;font-size:16px;text-align:right;font-family:inherit}
+#setOv .actions{width:100%;max-width:440px;display:flex;gap:10px;margin-top:14px;padding-bottom:20px}
+#setOv .actions .btn{flex:1;justify-content:center;height:52px}
+.toggle{width:100%;max-width:440px;margin-bottom:9px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="side idle" id="top" data-i="1">
+    <div class="badge" id="badge1">▲</div>
+    <div class="name" id="name1">BLACK</div>
+    <div class="time" id="time1">1:30:00</div>
+    <div class="meta" id="meta1"></div>
+  </div>
+
+  <div id="bar">
+    <div id="breakinfo"></div>
+    <button class="btn icon" id="btnSet">⚙</button>
+    <button class="btn wide" id="btnPause">⏸ 休憩</button>
+    <button class="btn icon" id="btnReset">↺</button>
+  </div>
+
+  <div class="side idle" id="bot" data-i="0">
+    <div class="badge" id="badge0">▲</div>
+    <div class="name" id="name0">WHITE</div>
+    <div class="time" id="time0">1:30:00</div>
+    <div class="meta" id="meta0"></div>
+  </div>
+</div>
+
+<div class="overlay" id="pauseOv">
+  <div class="big">休 憩 中</div>
+  <div class="clock" id="breakClock">00:00</div>
+  <div class="sub">両者の時計は止まっています</div>
+  <button class="btn wide" id="btnResume">▶ 再開</button>
+</div>
+
+<div class="overlay" id="setOv">
+  <h2>持ち時間の設定</h2>
+  <p class="hint">変更すると対局はリセットされます</p>
+  <div id="presets"></div>
+  <div id="customBox">
+    <div class="row"><span>初期持ち時間（分）</span><input type="number" id="cBase" inputmode="numeric" min="1" max="600"></div>
+    <div class="row"><span>1手ごとの加算（秒）</span><input type="number" id="cInc" inputmode="numeric" min="0" max="180"></div>
+    <div class="row"><span>第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
+    <div class="row"><span>通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
+  </div>
+  <div class="opt toggle" id="soundOpt"><div class="t">効果音 <span id="soundState">ON</span></div><div class="d">着手時のクリック音と時間切れ音</div></div>
+  <div class="actions">
+    <button class="btn" id="btnCancel">キャンセル</button>
+    <button class="btn wide" id="btnApply">適用してリセット</button>
+  </div>
+</div>
+
+<script>
+const PRESETS = [
+  {id:'fide',   t:'クラシカル（FIDE標準）', d:'90分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:90*60},{moves:0,base:30*60}]},
+  {id:'wcc',    t:'世界選手権型',           d:'120分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:120*60},{moves:0,base:30*60}]},
+  {id:'single', t:'クラシカル（単一期間）',  d:'90分 + 30秒加算',             inc:30, stages:[{moves:0,base:90*60}]},
+  {id:'rapid',  t:'ラピッド',               d:'15分 + 10秒加算',             inc:10, stages:[{moves:0,base:15*60}]},
+  {id:'blitz',  t:'ブリッツ',               d:'3分 + 2秒加算',               inc:2,  stages:[{moves:0,base:3*60}]},
+  {id:'custom', t:'カスタム',               d:'自分で設定する',              custom:true}
+];
+const LS='chessclock.v1';
+let cfg = load();
+
+function load(){
+  try{ const s=JSON.parse(localStorage.getItem(LS)); if(s&&s.tc) return s; }catch(e){}
+  return {sel:'fide', tc:PRESETS[0], sound:true, custom:{base:90,inc:30,moves:40,add:30}};
+}
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
+
+let P, active, started, over, paused, t0, ms0, breakMs, breakStart, raf;
+
+function reset(){
+  const tc = cfg.tc;
+  P = [0,1].map(()=>({ms: tc.stages[0].base*1000, moves:0, stage:0, inStage:0, flag:false}));
+  active=null; started=false; over=false; paused=false;
+  breakMs=0; breakStart=0;
+  document.getElementById('pauseOv').classList.remove('show');
+  render();
+}
+
+function remaining(i){
+  if(active===i && started && !paused && !over) return Math.max(0, ms0 - (performance.now()-t0));
+  return P[i].ms;
+}
+function commit(){ if(active!==null) P[active].ms = remaining(active); }
+
+function setActive(i){
+  P[i].ms = remaining(i);
+  active = i; started = true;
+  ms0 = P[i].ms; t0 = performance.now();
+  wake();
+}
+
+function onMove(i){
+  const p=P[i], tc=cfg.tc;
+  p.ms += tc.inc*1000;
+  p.moves++;
+  const st = tc.stages[p.stage];
+  if(st && st.moves>0){
+    p.inStage++;
+    if(p.inStage>=st.moves){
+      p.stage++; p.inStage=0;
+      const nx = tc.stages[p.stage];
+      if(nx) p.ms += nx.base*1000;
+    }
+  }
+}
+
+function tap(i){
+  if(over||paused) return;
+  beep(660,.04);
+  if(active===null){ setActive(1-i); return; }
+  if(active!==i) return;
+  commit();
+  onMove(i);
+  setActive(1-i);
+}
+
+function pause(){
+  if(!started||over||paused) return;
+  commit(); paused=true; breakStart=performance.now();
+  document.getElementById('pauseOv').classList.add('show');
+  render();
+}
+function resume(){
+  if(!paused) return;
+  breakMs += performance.now()-breakStart;
+  paused=false;
+  document.getElementById('pauseOv').classList.remove('show');
+  if(active!==null){ ms0=P[active].ms; t0=performance.now(); }
+  wake();
+}
+
+function fmt(ms){
+  if(ms<0) ms=0;
+  const ts=Math.floor(ms/100), s=Math.floor(ts/10), h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
+  if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+  if(s<20) return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0')+'.'+(ts%10);
+  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
+}
+function fmtShort(ms){
+  const s=Math.floor(ms/1000);
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+
+function render(){
+  const els=[document.getElementById('bot'),document.getElementById('top')];
+  for(let i=0;i<2;i++){
+    const r=remaining(i), p=P[i], el=els[i];
+    document.getElementById('time'+i).textContent = fmt(r);
+    el.classList.toggle('active', active===i && !paused && !over);
+    el.classList.toggle('idle', !(active===i) || paused || over);
+    el.classList.toggle('low', r<60000);
+    el.classList.toggle('flagged', p.flag);
+    document.getElementById('badge'+i).textContent = p.flag ? '時間切れ' : (active===i&&!paused&&!over ? '手番' : '');
+    const st=cfg.tc.stages[p.stage];
+    let meta = p.moves+'手';
+    if(st&&st.moves>0) meta += ' ／ 第'+(p.stage+1)+'期間まであと'+(st.moves-p.inStage)+'手';
+    else if(p.stage>0) meta += ' ／ 最終期間';
+    if(!started) meta = 'タップで相手の時計がスタート';
+    document.getElementById('meta'+i).textContent = over&&p.flag ? '負け（時間切れ）' : meta;
+  }
+  document.getElementById('breakinfo').textContent = breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
+  const bp=document.getElementById('btnPause');
+  bp.textContent = paused ? '▶ 再開' : '⏸ 休憩';
+  bp.style.opacity = (!started||over) ? .4 : 1;
+}
+
+function tick(){
+  if(started&&!paused&&!over&&active!==null){
+    if(remaining(active)<=0){
+      P[active].ms=0; P[active].flag=true; over=true;
+      beep(180,.6);
+    }
+  }
+  if(paused) document.getElementById('breakClock').textContent = fmtShort(breakMs+(performance.now()-breakStart));
+  render();
+  raf=requestAnimationFrame(tick);
+}
+
+// --- sound ---
+let ac=null;
+function beep(f,d){
+  if(!cfg.sound) return;
+  try{
+    ac = ac || new (window.AudioContext||window.webkitAudioContext)();
+    if(ac.state==='suspended') ac.resume();
+    const o=ac.createOscillator(), g=ac.createGain();
+    o.frequency.value=f; o.type='sine'; o.connect(g); g.connect(ac.destination);
+    g.gain.setValueAtTime(.18,ac.currentTime);
+    g.gain.exponentialRampToValueAtTime(.0001,ac.currentTime+d);
+    o.start(); o.stop(ac.currentTime+d);
+  }catch(e){}
+}
+
+// --- wake lock ---
+let wl=null;
+async function wake(){
+  try{ if('wakeLock' in navigator && !wl) wl = await navigator.wakeLock.request('screen'); }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{ wl=null; if(started&&!paused&&!over) wake(); });
+
+// --- settings UI ---
+function buildPresets(){
+  const box=document.getElementById('presets'); box.innerHTML='';
+  PRESETS.forEach(p=>{
+    const d=document.createElement('div');
+    d.className='opt'+(cfg.sel===p.id?' sel':'');
+    d.innerHTML='<div class="t">'+p.t+'</div><div class="d">'+p.d+'</div>';
+    d.onclick=()=>{ cfg.sel=p.id; buildPresets(); document.getElementById('customBox').classList.toggle('show',p.custom); };
+    box.appendChild(d);
+  });
+  document.getElementById('customBox').classList.toggle('show', cfg.sel==='custom');
+}
+function openSet(){
+  buildPresets();
+  const c=cfg.custom;
+  cBase.value=c.base; cInc.value=c.inc; cMoves.value=c.moves; cAdd.value=c.add;
+  document.getElementById('soundState').textContent = cfg.sound?'ON':'OFF';
+  document.getElementById('setOv').classList.add('show');
+}
+function applySet(){
+  if(cfg.sel==='custom'){
+    const base=Math.max(1,+cBase.value||90), inc=Math.max(0,+cInc.value||0),
+          mv=Math.max(0,+cMoves.value||0), add=Math.max(0,+cAdd.value||0);
+    cfg.custom={base,inc,moves:mv,add};
+    const stages=[{moves:mv,base:base*60}];
+    if(mv>0) stages.push({moves:0,base:add*60});
+    cfg.tc={inc,stages};
+  }else{
+    const p=PRESETS.find(x=>x.id===cfg.sel);
+    cfg.tc={inc:p.inc,stages:p.stages};
+  }
+  save();
+  document.getElementById('setOv').classList.remove('show');
+  reset();
+}
+
+// --- bind ---
+document.getElementById('bot').addEventListener('pointerdown',e=>{e.preventDefault();tap(0);});
+document.getElementById('top').addEventListener('pointerdown',e=>{e.preventDefault();tap(1);});
+document.getElementById('btnPause').onclick=()=>paused?resume():pause();
+document.getElementById('btnResume').onclick=resume;
+document.getElementById('btnSet').onclick=openSet;
+document.getElementById('btnCancel').onclick=()=>document.getElementById('setOv').classList.remove('show');
+document.getElementById('btnApply').onclick=applySet;
+document.getElementById('btnReset').onclick=()=>{ if(!started || confirm('対局をリセットしますか？')) reset(); };
+document.getElementById('soundOpt').onclick=()=>{
+  cfg.sound=!cfg.sound; save();
+  document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
+};
+document.addEventListener('gesturestart',e=>e.preventDefault());
+document.addEventListener('dblclick',e=>e.preventDefault());
+
+reset(); tick();
+
+// --- offline (service worker) ---
+if('serviceWorker' in navigator && location.protocol==='https:'){
+  addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
