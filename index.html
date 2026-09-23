@@ -22,11 +22,15 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
 /* ── 筐体とベゼル ───────────────────────── */
+/* ── 筐体 — 天板・液晶・ボタンをひと続きの黒いボディにまとめる ── */
+#device{margin:auto 10px;padding:10px;
+  background:linear-gradient(#15181c,#05070a);border-radius:20px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 30px rgba(0,0,0,.75)}
+
 /* ── 天板のプランジャー ─────────────────── */
-#deck{flex:none;height:58px;margin:8px 10px 0;padding:9px 10px 8px;
-  display:flex;gap:4px;
-  background:linear-gradient(#141619,#050607);border-radius:17px 17px 7px 7px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+#deck{height:56px;display:flex;gap:4px;padding:8px 9px;margin-bottom:9px;
+  border-radius:13px;background:linear-gradient(#090b0d,#171b20);
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.85)}
 .plunger{flex:1;min-width:0;border:none;padding:0;cursor:pointer;
   border-radius:10px 10px 6px 6px;
   background:linear-gradient(#fff 0%,#f3f5f7 55%,#dcdfe3 100%);
@@ -39,16 +43,12 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   box-shadow:0 1px 0 #a7adb4,0 2px 5px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.7);
   transform:translateY(5px)}
 
-/* 外枠は黒。中の表示面だけを液晶らしく見せる */
-#case{flex:0 1 auto;margin:auto 10px;padding:10px;
-  background:linear-gradient(#0b0d10,#000);border-radius:8px 8px 18px 18px;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 22px rgba(0,0,0,.7)}
 /* 桁の高さに合わせて液晶面の高さを決める＝上下に無駄な余白を作らない */
-#panel{width:100%;aspect-ratio:7.4;max-height:100%;
+#panel{width:100%;aspect-ratio:7.4;
   position:relative;overflow:hidden;display:flex;align-items:stretch;
   border-radius:6px;padding:4px 8px;
-  background:linear-gradient(168deg,#b6c3a6 0%,#a6b497 46%,#9aa98c 100%);
-  box-shadow:inset 0 3px 11px rgba(18,28,12,.42),inset 0 0 0 1px rgba(0,0,0,.4)}
+  background:linear-gradient(168deg,#cfd2ce 0%,#c1c5c1 46%,#b3b7b3 100%);
+  box-shadow:inset 0 3px 11px rgba(22,26,22,.42),inset 0 0 0 1px rgba(0,0,0,.4)}
 /* ガラス面のわずかな映り込み */
 #panel::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(104deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.04) 36%,rgba(255,255,255,0) 58%)}
@@ -61,8 +61,8 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 .pane svg,#mid svg{width:100%;height:100%;display:block}
 
 /* ── セグメント ─────────────────────────── */
-.seg{fill:#151f0e}
-.seg.off{opacity:.085}
+.seg{fill:#181b18}
+.seg.off{opacity:.095}
 .pane.low .seg{fill:#8a1d12}
 .pane.flag .seg{fill:#a81414}
 .pane.run .colon{animation:blink 1s step-end infinite}
@@ -70,17 +70,17 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 @keyframes blink{50%{opacity:.08}}
 @keyframes flash{50%{opacity:.35}}
 
-/* ── 操作バー ───────────────────────────── */
-#bar{height:66px;flex:none;display:flex;align-items:center;justify-content:center;
-  gap:9px;position:relative;padding:0 10px}
-.btn{border:none;background:#1c232c;color:#dfe6ee;border-radius:13px;padding:0 17px;height:44px;
+/* ── 状態表示と操作バー ─────────────────── */
+#status{height:13px;margin:6px 0 7px;text-align:center;
+  font-size:10px;color:#5b6675;letter-spacing:.05em}
+#bar{display:flex;align-items:center;justify-content:center;gap:9px}
+.btn{border:none;background:#1c232c;color:#dfe6ee;border-radius:12px;padding:0 17px;height:44px;
   font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;font-family:inherit}
 .btn:active{background:#2b3440}
 .btn.wide{flex:1;max-width:180px;justify-content:center;background:#2563eb}
 .btn.wide:active{background:#1d4ed8}
 .btn.icon{width:44px;padding:0;justify-content:center;font-size:18px}
-#breakinfo{position:absolute;top:1px;left:0;right:0;text-align:center;font-size:10px;color:#5b6675;letter-spacing:.05em}
-#hint{display:none;position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;color:#39424e}
+#hint{display:none;flex:none;text-align:center;font-size:10px;color:#39424e;padding:8px 0 4px}
 @media (orientation:portrait){#hint{display:block}}
 
 /* ── オーバーレイ ───────────────────────── */
@@ -114,26 +114,28 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 </head>
 <body>
 <div id="app">
-  <div id="deck">
-    <div class="plunger" id="pl0"></div>
-    <div class="plunger" id="pl1"></div>
-  </div>
+  <div id="device">
+    <div id="deck">
+      <div class="plunger" id="pl0"></div>
+      <div class="plunger" id="pl1"></div>
+    </div>
 
-  <div id="case">
     <div id="panel">
       <div class="pane pre" id="p0"></div>
       <div id="mid"></div>
       <div class="pane pre" id="p1"></div>
     </div>
+
+    <div id="status"></div>
+
+    <div id="bar">
+      <button class="btn icon" id="btnSet">⚙</button>
+      <button class="btn wide" id="btnPause">⏸ 休憩</button>
+      <button class="btn icon" id="btnReset">↺</button>
+    </div>
   </div>
 
-  <div id="bar">
-    <div id="breakinfo"></div>
-    <button class="btn icon" id="btnSet">⚙</button>
-    <button class="btn wide" id="btnPause">⏸ 休憩</button>
-    <button class="btn icon" id="btnReset">↺</button>
-    <div id="hint">横向きにすると大きく表示されます</div>
-  </div>
+  <div id="hint">横向きにすると大きく表示されます</div>
 </div>
 
 <div class="overlay" id="pauseOv">
@@ -352,7 +354,7 @@ function render(){
   const ms=inc+'|'+dir;
   if(ms!==midSig){ midSig=ms; document.getElementById('mid').innerHTML=midSvg(inc, dir); }
 
-  document.getElementById('breakinfo').textContent =
+  document.getElementById('status').textContent =
     !started ? 'タップすると反対側の時計が動きます'
   : breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');

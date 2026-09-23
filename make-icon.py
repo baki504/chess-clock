@@ -28,8 +28,8 @@ SEG = {"0": "abcdef", "1": "bc", "2": "abged", "3": "abgcd", "4": "fbgc",
        "5": "afgcd", "6": "afgecd", "7": "abc", "8": "abcdefg", "9": "abfgcd", " ": ""}
 
 BG   = "#000000"   # case — black frame
-LCD  = "#a6b497"   # display glass — liquid crystal green-grey
-LIT  = "#151f0e"   # lit segment
+LCD  = "#c1c5c1"   # display glass — liquid crystal grey
+LIT  = "#181b18"   # lit segment
 OFF  = 0.10        # ghost opacity
 
 
@@ -59,7 +59,7 @@ def render(px, path):
     X0, X1, Y0, GH = 44, 468, 156, 200
     ax.add_patch(FancyBboxPatch((X0, Y0), X1 - X0, GH,
                                 boxstyle="round,pad=0,rounding_size=26",
-                                facecolor=LCD, edgecolor="#20281c", lw=3, zorder=1))
+                                facecolor=LCD, edgecolor="#242724", lw=3, zorder=1))
 
     # two two-digit groups with a centre gap for the arrow — positions derived,
     # so the digits can never collide with each other or with the arrow
