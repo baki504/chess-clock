@@ -18,12 +18,15 @@
 html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
   user-select:none;-webkit-user-select:none;overscroll-behavior:none;touch-action:manipulation}
+/* 横向きのノッチ／ホームインジケータを避ける。縦向きでは最小値が効く */
 #app{display:flex;flex-direction:column;height:100dvh;
-  padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  padding-top:max(6px,env(safe-area-inset-top));
+  padding-bottom:max(4px,env(safe-area-inset-bottom));
+  padding-left:max(12px,env(safe-area-inset-left));
+  padding-right:max(12px,env(safe-area-inset-right))}
 
-/* ── 筐体とベゼル ───────────────────────── */
 /* ── 筐体 — 天板・液晶・ボタンをひと続きの黒いボディにまとめる ── */
-#device{margin:auto 10px;padding:10px;
+#device{margin:auto 0;padding:10px;
   background:linear-gradient(#15181c,#05070a);border-radius:20px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 30px rgba(0,0,0,.75)}
 
@@ -73,25 +76,34 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 /* ── 状態表示と操作バー ─────────────────── */
 #status{height:13px;margin:6px 0 7px;text-align:center;
   font-size:10px;color:#5b6675;letter-spacing:.05em}
-#bar{display:flex;align-items:center;justify-content:center;gap:9px}
-.btn{border:none;background:#1c232c;color:#dfe6ee;border-radius:12px;padding:0 17px;height:44px;
-  font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;font-family:inherit}
-.btn:active{background:#2b3440}
-.btn.wide{flex:1;max-width:180px;justify-content:center;background:#2563eb}
-.btn.wide:active{background:#1d4ed8}
-.btn.icon{width:44px;padding:0;justify-content:center;font-size:18px}
+#bar{display:flex;align-items:center;justify-content:center;gap:10px;padding-bottom:3px}
+/* 液晶下のボタンも天板のプランジャーと同じ押し心地の見た目にする */
+.btn{border:none;cursor:pointer;font-family:inherit;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  height:44px;padding:0 18px;border-radius:9px;
+  font-size:15px;font-weight:700;color:#1b2027;letter-spacing:.02em;
+  background:linear-gradient(#fff 0%,#f3f5f7 55%,#dcdfe3 100%);
+  box-shadow:0 4px 0 #a7adb4,0 6px 10px rgba(0,0,0,.5),inset 0 1px 0 #fff;
+  transform:translateY(-2px);
+  transition:transform .1s cubic-bezier(.4,0,.2,1),box-shadow .1s ease}
+.btn:active{transform:translateY(2px);
+  background:linear-gradient(#e9ecee,#d3d7db);
+  box-shadow:0 1px 0 #a7adb4,0 2px 4px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7)}
+.btn.wide{flex:1;max-width:190px}
+.btn.icon{width:54px;padding:0;font-size:18px}
 #hint{display:none;flex:none;text-align:center;font-size:10px;color:#39424e;padding:8px 0 4px}
 @media (orientation:portrait){#hint{display:block}}
 
 /* ── オーバーレイ ───────────────────────── */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:20;display:none;
   flex-direction:column;align-items:center;justify-content:center;padding:26px;
-  padding-top:calc(26px + env(safe-area-inset-top));padding-bottom:calc(26px + env(safe-area-inset-bottom))}
+  padding-top:calc(26px + env(safe-area-inset-top));padding-bottom:calc(26px + env(safe-area-inset-bottom));
+  padding-left:calc(20px + env(safe-area-inset-left));padding-right:calc(20px + env(safe-area-inset-right))}
 .overlay.show{display:flex}
 #pauseOv .big{font-size:19px;font-weight:700;letter-spacing:.08em;color:#fbbf24}
 #pauseOv .clock{font-size:58px;font-weight:600;font-variant-numeric:tabular-nums;margin:12px 0 4px}
 #pauseOv .sub{font-size:13px;color:#8b95a5;margin-bottom:26px}
-#pauseOv .btn.wide{max-width:260px;width:100%;height:56px;font-size:17px;background:#16a34a}
+#pauseOv .btn.wide{max-width:260px;width:100%;height:56px;font-size:17px}
 
 #setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #setOv h2{font-size:17px;margin:0 0 4px;align-self:flex-start}
@@ -129,8 +141,8 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <div id="status"></div>
 
     <div id="bar">
-      <button class="btn icon" id="btnSet">⚙</button>
-      <button class="btn wide" id="btnPause">⏸ 休憩</button>
+      <button class="btn icon" id="btnSet">&#9881;&#65038;</button>
+      <button class="btn wide" id="btnPause">&#9208;&#65038; 休憩</button>
       <button class="btn icon" id="btnReset">↺</button>
     </div>
   </div>
@@ -142,7 +154,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   <div class="big">休 憩 中</div>
   <div class="clock" id="breakClock">00:00</div>
   <div class="sub">両者の時計は止まっています</div>
-  <button class="btn wide" id="btnResume">▶ 再開</button>
+  <button class="btn wide" id="btnResume">&#9654;&#65038; 再開</button>
 </div>
 
 <div class="overlay" id="setOv">
@@ -358,7 +370,7 @@ function render(){
     !started ? 'タップすると反対側の時計が動きます'
   : breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
-  bp.textContent = paused ? '▶ 再開' : '⏸ 休憩';
+  bp.textContent = paused ? '\u25B6\uFE0E 再開' : '\u23F8\uFE0E 休憩';
   bp.style.opacity = (!started||over) ? .4 : 1;
 }
 
