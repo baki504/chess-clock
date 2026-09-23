@@ -270,15 +270,17 @@ const PRESETS = [
 
   {id:'custom',g:'その他',     t:'カスタム',  d:'自分で設定する',              custom:true}
 ];
-const DEFAULT_ID='r10';   // chess.com と同じく 10分ラピッドを既定に
-const LS='chessclock.v4';
+// 既定は 15|10。物理クロックはボタンを押す時間も持ち時間から引かれるので、
+// chess.com 既定の 10分（加算なし）より加算ありの方が実情に合う。
+const DEFAULT_ID='r1510';
+const LS='chessclock.v5';
 let cfg = load();
 
 function load(){
   try{ const s=JSON.parse(localStorage.getItem(LS)); if(s&&s.tc) return s; }catch(e){}
   const d=PRESETS.find(p=>p.id===DEFAULT_ID);
   return {sel:d.id, tc:{inc:d.inc, stages:d.stages}, sound:true,
-          custom:{base:10,inc:0,moves:0,add:0}};
+          custom:{base:15,inc:10,moves:0,add:0}};
 }
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
 
