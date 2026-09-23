@@ -196,7 +196,8 @@ function onMove(i){
 function tap(i){
   if(over||paused) return;
   beep(660,.04);
-  if(active===null){ setActive(1-i); return; }
+  // チェスは白が先手 — 最初のタップはどちら側でも必ず白の時計から
+  if(active===null){ setActive(whiteIndex()); return; }
   if(active!==i) return;
   commit();
   onMove(i);
@@ -233,6 +234,7 @@ function fmtShort(ms){
 // 白が下側か（座る位置に合わせて入れ替え可能）
 function whiteBottom(){ return cfg.whiteBottom !== false; }
 function isWhite(i){ return (i===0) === whiteBottom(); }
+function whiteIndex(){ return whiteBottom() ? 0 : 1; }
 
 function render(){
   const els=[document.getElementById('bot'),document.getElementById('top')];
@@ -249,12 +251,13 @@ function render(){
     el.classList.toggle('flagged', p.flag);
     document.getElementById('wm'+i).textContent = w ? '♔' : '♚';
     document.getElementById('name'+i).textContent = w ? '♔ WHITE' : '♚ BLACK';
-    document.getElementById('badge'+i).textContent = p.flag ? '時間切れ' : (turn ? '手番' : '');
+    document.getElementById('badge'+i).textContent =
+      p.flag ? '時間切れ' : turn ? '手番' : (!started && !over && w) ? '先手' : '';
     const st=cfg.tc.stages[p.stage];
     let meta = p.moves+'手';
     if(st&&st.moves>0) meta += ' ／ 第'+(p.stage+1)+'期間まであと'+(st.moves-p.inStage)+'手';
     else if(p.stage>0) meta += ' ／ 最終期間';
-    if(!started) meta = 'タップで相手の時計がスタート';
+    if(!started) meta = 'タップして対局開始（白の時計から）';
     document.getElementById('meta'+i).textContent = over&&p.flag ? '負け（時間切れ）' : meta;
   }
   document.getElementById('breakinfo').textContent = breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
