@@ -22,12 +22,31 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
 /* ── 筐体とベゼル ───────────────────────── */
+/* ── 天板のプランジャー ─────────────────── */
+#deck{flex:none;height:58px;margin:8px 10px 0;padding:9px 10px 8px;
+  display:flex;gap:4px;
+  background:linear-gradient(#141619,#050607);border-radius:17px 17px 7px 7px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.plunger{flex:1;min-width:0;border:none;padding:0;cursor:pointer;
+  border-radius:10px 10px 6px 6px;
+  background:linear-gradient(#fff 0%,#f3f5f7 55%,#dcdfe3 100%);
+  box-shadow:0 6px 0 #a7adb4,0 9px 12px rgba(0,0,0,.55),inset 0 1px 0 #fff;
+  transform:translateY(-4px);
+  transition:transform .13s cubic-bezier(.4,0,.2,1),box-shadow .13s ease}
+/* 押された側が凹む（＝相手の時計が動いている状態） */
+.plunger.down{
+  background:linear-gradient(#e9ecee 0%,#d3d7db 100%);
+  box-shadow:0 1px 0 #a7adb4,0 2px 5px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.7);
+  transform:translateY(5px)}
+
 /* 外枠は黒。中の表示面だけを液晶らしく見せる */
-#case{flex:1;min-height:0;margin:10px 10px 4px;padding:11px;
-  background:linear-gradient(#0b0d10,#000);border-radius:18px;
+#case{flex:0 1 auto;margin:auto 10px;padding:10px;
+  background:linear-gradient(#0b0d10,#000);border-radius:8px 8px 18px 18px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 8px 22px rgba(0,0,0,.7)}
-#panel{height:100%;position:relative;overflow:hidden;display:flex;align-items:stretch;
-  border-radius:8px;padding:8px 10px;
+/* 桁の高さに合わせて液晶面の高さを決める＝上下に無駄な余白を作らない */
+#panel{width:100%;aspect-ratio:7.4;max-height:100%;
+  position:relative;overflow:hidden;display:flex;align-items:stretch;
+  border-radius:6px;padding:4px 8px;
   background:linear-gradient(168deg,#b6c3a6 0%,#a6b497 46%,#9aa98c 100%);
   box-shadow:inset 0 3px 11px rgba(18,28,12,.42),inset 0 0 0 1px rgba(0,0,0,.4)}
 /* ガラス面のわずかな映り込み */
@@ -95,6 +114,11 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 </head>
 <body>
 <div id="app">
+  <div id="deck">
+    <div class="plunger" id="pl0"></div>
+    <div class="plunger" id="pl1"></div>
+  </div>
+
   <div id="case">
     <div id="panel">
       <div class="pane pre" id="p0"></div>
@@ -310,8 +334,11 @@ function strings(i){
 
 function render(){
   const panes=[document.getElementById('p0'),document.getElementById('p1')];
+  const plungers=[document.getElementById('pl0'),document.getElementById('pl1')];
   for(let i=0;i<2;i++){
     const r=remaining(i), p=P[i], el=panes[i];
+    // 押した側が凹んだまま＝相手の時計が動いている（実機のシーソーと同じ）
+    plungers[i].classList.toggle('down', started && active!==i);
     const st=strings(i), sig=st.big+'|'+st.mv+'|'+st.sec;
     if(sig!==p.sig){ p.sig=sig; el.innerHTML=sideSvg(st.big, st.mv, st.sec); }
     el.classList.toggle('pre', !started && !over);
@@ -400,8 +427,9 @@ function applySet(){
 }
 
 /* ═══ 入力 ══════════════════════════════════════════ */
-document.getElementById('p0').addEventListener('pointerdown',e=>{e.preventDefault();tap(0);});
-document.getElementById('p1').addEventListener('pointerdown',e=>{e.preventDefault();tap(1);});
+for(const [id,i] of [['p0',0],['p1',1],['pl0',0],['pl1',1]]){
+  document.getElementById(id).addEventListener('pointerdown',e=>{e.preventDefault();tap(i);});
+}
 document.getElementById('btnPause').onclick=()=>paused?resume():pause();
 document.getElementById('btnResume').onclick=resume;
 document.getElementById('btnSet').onclick=openSet;
