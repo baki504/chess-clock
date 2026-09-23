@@ -124,7 +124,6 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <div class="row"><span>第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
     <div class="row"><span>通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
   </div>
-  <div class="opt toggle" id="swapOpt"><div class="t">先手（白）の側 <span id="swapState">左</span></div><div class="d">中央の矢印が指している側から対局が始まります</div></div>
   <div class="opt toggle" id="soundOpt"><div class="t">効果音 <span id="soundState">ON</span></div><div class="d">着手時のクリック音と時間切れ音</div></div>
   <div class="actions">
     <button class="btn" id="btnCancel">キャンセル</button>
@@ -185,18 +184,18 @@ function sideSvg(big, mv, sec){
        + `</svg>`;
 }
 
-/* 中央： 上=1手あたりの加算秒数 / 下=手番を指す三角 */
+/* 中央： 上=1手あたりの加算秒数 / 下=手番を指す三角（dir=0 は未開始で非表示） */
 function midSvg(inc, dir){
   const I=runDigits(inc);
   const W=Math.max(I.w*SS, 44);
   const ix=(W-I.w*SS)/2;
   const aw=24, ah=28, ay=DH-ah-6, ax=(W-aw)/2;
-  const tri = dir<0
-    ? `${ax+aw},${ay} ${ax+aw},${ay+ah} ${ax},${ay+ah/2}`
-    : `${ax},${ay} ${ax},${ay+ah} ${ax+aw},${ay+ah/2}`;
+  let tri='';
+  if(dir<0) tri=`${ax+aw},${ay} ${ax+aw},${ay+ah} ${ax},${ay+ah/2}`;
+  else if(dir>0) tri=`${ax},${ay} ${ax},${ay+ah} ${ax+aw},${ay+ah/2}`;
   return `<svg viewBox="0 0 ${W} ${DH}" preserveAspectRatio="xMidYMid meet">`
        + `<g transform="translate(${ix},2) scale(${SS})">${I.m}</g>`
-       + `<polygon class="seg" points="${tri}"/>`
+       + (tri ? `<polygon class="seg" points="${tri}"/>` : '')
        + `</svg>`;
 }
 
@@ -217,7 +216,7 @@ let cfg = load();
 
 function load(){
   try{ const s=JSON.parse(localStorage.getItem(LS)); if(s&&s.tc) return s; }catch(e){}
-  return {sel:'fide', tc:PRESETS[0], sound:true, whiteLeft:true, custom:{base:90,inc:30,moves:40,add:30}};
+  return {sel:'fide', tc:PRESETS[0], sound:true, custom:{base:90,inc:30,moves:40,add:30}};
 }
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
 
@@ -261,15 +260,12 @@ function onMove(i){
   }
 }
 
-// 先手（白）がどちら側か — 表示上は左右の区別しかないので中央の矢印で示す
-function whiteLeft(){ return cfg.whiteLeft !== false; }
-function whiteIndex(){ return whiteLeft() ? 0 : 1; }
-
 function tap(i){
   if(over||paused) return;
   beep(660,.04);
-  // チェスは白が先手 — 最初のタップはどちら側でも必ず白の時計から
-  if(active===null){ setActive(whiteIndex()); return; }
+  // 実機と同じく「自分側を押す＝相手の時計が動く」。対局開始時も同じ意味なので、
+  // アプリ側が先手の位置を知る必要はない（後手が押して先手の時計を動かす）。
+  if(active===null){ setActive(1-i); return; }
   if(active!==i) return;
   commit();
   onMove(i);
@@ -318,13 +314,15 @@ function render(){
     el.classList.toggle('low', r<60000 && !p.flag);
     el.classList.toggle('flag', p.flag);
   }
-  // 中央：加算秒数と、手番（未開始なら先手）を指す矢印
-  const target = active===null ? whiteIndex() : active;
+  // 中央：加算秒数と、動作中の側を指す矢印（対局開始まで矢印は出さない）
+  const dir = active===null ? 0 : (active===0 ? -1 : 1);
   const inc=p2(Math.min(99,cfg.tc.inc));
-  const ms=inc+'|'+target;
-  if(ms!==midSig){ midSig=ms; document.getElementById('mid').innerHTML=midSvg(inc, target===0?-1:1); }
+  const ms=inc+'|'+dir;
+  if(ms!==midSig){ midSig=ms; document.getElementById('mid').innerHTML=midSvg(inc, dir); }
 
-  document.getElementById('breakinfo').textContent = breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
+  document.getElementById('breakinfo').textContent =
+    !started ? 'タップすると反対側の時計が動きます'
+  : breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
   bp.textContent = paused ? '▶ 再開' : '⏸ 休憩';
   bp.style.opacity = (!started||over) ? .4 : 1;
@@ -377,7 +375,6 @@ function openSet(){
   const c=cfg.custom;
   cBase.value=c.base; cInc.value=c.inc; cMoves.value=c.moves; cAdd.value=c.add;
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
-  document.getElementById('swapState').textContent=whiteLeft()?'左':'右';
   document.getElementById('setOv').classList.add('show');
 }
 function applySet(){
@@ -409,11 +406,6 @@ document.getElementById('btnReset').onclick=()=>{ if(!started || confirm('対局
 document.getElementById('soundOpt').onclick=()=>{
   cfg.sound=!cfg.sound; save();
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
-};
-document.getElementById('swapOpt').onclick=()=>{
-  cfg.whiteLeft=!whiteLeft(); save();
-  document.getElementById('swapState').textContent=whiteLeft()?'左':'右';
-  render();
 };
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
