@@ -22,22 +22,31 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
 .side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;background:#171b22;transition:background .12s ease;min-height:0;cursor:pointer}
-.side.idle{background:#12151a}
-.side.active{background:#14532d}
-.side.low.active{background:#7f1d1d}
-.side.flagged{background:#450a0a}
+  position:relative;overflow:hidden;min-height:0;cursor:pointer;
+  background:var(--bg);color:var(--fg);
+  transition:opacity .15s ease,box-shadow .15s ease,background .15s ease}
+/* 駒の色そのものを背景にする — 一目でどちら側か分かる */
+.side.w{--bg:#e9e3d7;--fg:#14171b;--dim:#5e6873}
+.side.b{--bg:#14171b;--fg:#ece9e3;--dim:#7a838e}
+.side.pre{opacity:.82}
+.side.idle{opacity:.34}
+.side.active{opacity:1;box-shadow:inset 0 0 0 7px var(--accent,#22c55e)}
+.side.low.active{--accent:#ef4444}
+.side.flagged{opacity:1;--bg:#6d1212;--fg:#fff;--dim:#fca5a5;box-shadow:inset 0 0 0 7px #ef4444}
 #top{transform:rotate(180deg)}
 
-.name{font-size:13px;letter-spacing:.14em;color:#8b95a5;margin-bottom:6px;font-weight:600}
+.wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);
+  font-size:min(52vw,44vh);line-height:1;color:var(--fg);opacity:.08;
+  pointer-events:none;z-index:0}
+.name,.time,.meta,.badge{position:relative;z-index:1}
+.name{font-size:13px;letter-spacing:.14em;color:var(--dim);margin-bottom:6px;font-weight:700}
 .time{font-size:min(20vw,17vh);font-weight:600;line-height:1;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";color:#f4f6f9}
-.side.idle .time{color:#6b7480}
-.meta{margin-top:10px;font-size:13px;color:#93a0b1;height:18px;letter-spacing:.02em}
-.side.active .meta{color:#cfe6d8}
-.side.low.active .meta{color:#fecaca}
-.badge{position:absolute;top:14px;right:16px;font-size:11px;padding:3px 8px;border-radius:99px;
-  background:rgba(255,255,255,.1);color:#cbd5e1;letter-spacing:.06em}
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";color:var(--fg)}
+.meta{margin-top:10px;font-size:13px;color:var(--dim);height:18px;letter-spacing:.02em}
+.badge{position:absolute;top:14px;right:16px;font-size:11px;padding:3px 9px;border-radius:99px;
+  background:var(--accent,#22c55e);color:#04210f;font-weight:700;letter-spacing:.06em}
+.side.low.active .badge{color:#fff}
+.side:not(.active) .badge{background:transparent;color:var(--dim);font-weight:600}
 
 #bar{height:72px;flex:none;background:#000;display:flex;align-items:center;justify-content:center;gap:10px;position:relative}
 .btn{border:none;background:#232a34;color:#e7ecf3;border-radius:14px;padding:0 18px;height:46px;
@@ -78,8 +87,9 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 </head>
 <body>
 <div id="app">
-  <div class="side idle" id="top" data-i="1">
-    <div class="badge" id="badge1">▲</div>
+  <div class="side b pre" id="top" data-i="1">
+    <div class="wm" id="wm1">♚</div>
+    <div class="badge" id="badge1"></div>
     <div class="name" id="name1">BLACK</div>
     <div class="time" id="time1">1:30:00</div>
     <div class="meta" id="meta1"></div>
@@ -92,8 +102,9 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <button class="btn icon" id="btnReset">↺</button>
   </div>
 
-  <div class="side idle" id="bot" data-i="0">
-    <div class="badge" id="badge0">▲</div>
+  <div class="side w pre" id="bot" data-i="0">
+    <div class="wm" id="wm0">♔</div>
+    <div class="badge" id="badge0"></div>
     <div class="name" id="name0">WHITE</div>
     <div class="time" id="time0">1:30:00</div>
     <div class="meta" id="meta0"></div>
@@ -117,6 +128,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <div class="row"><span>第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
     <div class="row"><span>通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
   </div>
+  <div class="opt toggle" id="swapOpt"><div class="t">白の位置 <span id="swapState">下</span></div><div class="d">対局者の座る位置に合わせて白黒を入れ替えます（即時反映）</div></div>
   <div class="opt toggle" id="soundOpt"><div class="t">効果音 <span id="soundState">ON</span></div><div class="d">着手時のクリック音と時間切れ音</div></div>
   <div class="actions">
     <button class="btn" id="btnCancel">キャンセル</button>
@@ -218,16 +230,26 @@ function fmtShort(ms){
   return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
 }
 
+// 白が下側か（座る位置に合わせて入れ替え可能）
+function whiteBottom(){ return cfg.whiteBottom !== false; }
+function isWhite(i){ return (i===0) === whiteBottom(); }
+
 function render(){
   const els=[document.getElementById('bot'),document.getElementById('top')];
   for(let i=0;i<2;i++){
-    const r=remaining(i), p=P[i], el=els[i];
+    const r=remaining(i), p=P[i], el=els[i], w=isWhite(i);
+    const turn = active===i && !paused && !over;
     document.getElementById('time'+i).textContent = fmt(r);
-    el.classList.toggle('active', active===i && !paused && !over);
-    el.classList.toggle('idle', !(active===i) || paused || over);
+    el.classList.toggle('w', w);
+    el.classList.toggle('b', !w);
+    el.classList.toggle('pre', !started && !over);
+    el.classList.toggle('active', turn);
+    el.classList.toggle('idle', started && !turn && !over);
     el.classList.toggle('low', r<60000);
     el.classList.toggle('flagged', p.flag);
-    document.getElementById('badge'+i).textContent = p.flag ? '時間切れ' : (active===i&&!paused&&!over ? '手番' : '');
+    document.getElementById('wm'+i).textContent = w ? '♔' : '♚';
+    document.getElementById('name'+i).textContent = w ? '♔ WHITE' : '♚ BLACK';
+    document.getElementById('badge'+i).textContent = p.flag ? '時間切れ' : (turn ? '手番' : '');
     const st=cfg.tc.stages[p.stage];
     let meta = p.moves+'手';
     if(st&&st.moves>0) meta += ' ／ 第'+(p.stage+1)+'期間まであと'+(st.moves-p.inStage)+'手';
@@ -292,6 +314,7 @@ function openSet(){
   const c=cfg.custom;
   cBase.value=c.base; cInc.value=c.inc; cMoves.value=c.moves; cAdd.value=c.add;
   document.getElementById('soundState').textContent = cfg.sound?'ON':'OFF';
+  document.getElementById('swapState').textContent = whiteBottom()?'下':'上';
   document.getElementById('setOv').classList.add('show');
 }
 function applySet(){
@@ -323,6 +346,11 @@ document.getElementById('btnReset').onclick=()=>{ if(!started || confirm('対局
 document.getElementById('soundOpt').onclick=()=>{
   cfg.sound=!cfg.sound; save();
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
+};
+document.getElementById('swapOpt').onclick=()=>{
+  cfg.whiteBottom=!whiteBottom(); save();
+  document.getElementById('swapState').textContent=whiteBottom()?'下':'上';
+  render();
 };
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
