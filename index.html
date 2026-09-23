@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#05070a">
 <meta name="apple-mobile-web-app-title" content="Chess Clock">
 <meta name="description" content="FIDE標準の持ち時間に対応したチェスクロック。休憩ポーズ付き。">
 <link rel="manifest" href="./manifest.webmanifest">
@@ -15,84 +15,113 @@
 <title>Chess Clock</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
+html,body{height:100%;margin:0;background:#05070a;color:#fff;overflow:hidden;
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP",sans-serif;
   user-select:none;-webkit-user-select:none;overscroll-behavior:none;touch-action:manipulation}
 #app{display:flex;flex-direction:column;height:100dvh;
   padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
 
-.side{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  position:relative;overflow:hidden;min-height:0;cursor:pointer;
-  background:var(--bg);color:var(--fg);
-  transition:opacity .15s ease,box-shadow .15s ease,background .15s ease}
-/* 駒の色そのものを背景にする — 一目でどちら側か分かる */
-.side.w{--bg:#e9e3d7;--fg:#14171b;--dim:#5e6873}
-.side.b{--bg:#14171b;--fg:#ece9e3;--dim:#7a838e}
-.side.pre{opacity:.82}
-.side.idle{opacity:.34}
-.side.active{opacity:1;box-shadow:inset 0 0 0 7px var(--accent,#22c55e)}
-.side.low.active{--accent:#ef4444}
-.side.flagged{opacity:1;--bg:#6d1212;--fg:#fff;--dim:#fca5a5;box-shadow:inset 0 0 0 7px #ef4444}
-#top{transform:rotate(180deg)}
+/* ── 筐体 ───────────────────────────────── */
+#clock{flex:1;min-height:0;display:flex;gap:8px;margin:10px 10px 6px;padding:8px;
+  background:#1b222c;border-radius:20px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 8px 22px rgba(0,0,0,.55)}
 
-.wm{position:absolute;top:50%;left:50%;transform:translate(-50%,-52%);
-  font-size:min(52vw,44vh);line-height:1;color:var(--fg);opacity:.08;
-  pointer-events:none;z-index:0}
-.name,.time,.meta,.badge{position:relative;z-index:1}
-.name{font-size:13px;letter-spacing:.14em;color:var(--dim);margin-bottom:6px;font-weight:700}
-.time{font-size:min(20vw,17vh);font-weight:600;line-height:1;letter-spacing:-.03em;
-  font-variant-numeric:tabular-nums;font-feature-settings:"tnum";color:var(--fg)}
-.meta{margin-top:10px;font-size:13px;color:var(--dim);height:18px;letter-spacing:.02em}
-.badge{position:absolute;top:14px;right:16px;font-size:11px;padding:3px 9px;border-radius:99px;
-  background:var(--accent,#22c55e);color:#04210f;font-weight:700;letter-spacing:.06em}
-.side.low.active .badge{color:#fff}
-.side:not(.active) .badge{background:transparent;color:var(--dim);font-weight:600}
+.side{flex:1;min-width:0;display:flex;flex-direction:column;cursor:pointer;
+  border-radius:13px;padding:9px 9px 7px;position:relative;overflow:hidden;
+  background:var(--case);color:var(--ink);
+  transition:opacity .15s ease,box-shadow .15s ease}
+/* 駒の色をそのまま筐体の色に */
+.side.w{--case:#e9e3d7;--ink:#14171b;--dim:#5e6873}
+.side.b{--case:#14171b;--ink:#ece9e3;--dim:#7a838e}
+.side.pre{opacity:.9}
+.side.idle{opacity:.5}
+.side.active{opacity:1;box-shadow:inset 0 0 0 3px #22c55e}
+.side.low.active{box-shadow:inset 0 0 0 3px #ef4444}
+.side.flagged{opacity:1;box-shadow:inset 0 0 0 3px #ef4444}
 
-#bar{height:72px;flex:none;background:#000;display:flex;align-items:center;justify-content:center;gap:10px;position:relative}
-.btn{border:none;background:#232a34;color:#e7ecf3;border-radius:14px;padding:0 18px;height:46px;
-  font-size:15px;font-weight:600;display:flex;align-items:center;gap:7px;font-family:inherit}
+/* ── ヘッダ ─────────────────────────────── */
+.head{flex:none;display:flex;align-items:center;gap:6px;padding:1px 3px 7px;min-height:22px}
+.pc{font-size:17px;line-height:1}
+.nm{font-size:11px;font-weight:700;letter-spacing:.13em;color:var(--dim)}
+.badge{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.06em;
+  padding:3px 8px;border-radius:99px;background:#22c55e;color:#04210f;white-space:nowrap}
+.side:not(.active) .badge{background:transparent;color:var(--dim)}
+.side.low.active .badge{background:#ef4444;color:#fff}
+.side.flagged .badge{background:#ef4444;color:#fff}
+
+/* ── 液晶 ───────────────────────────────── */
+.lcd{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+  border-radius:9px;padding:7px 9px;background:var(--lcd,#8d9c82);
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.42),inset 0 0 0 1px rgba(0,0,0,.22);
+  transition:background .2s ease}
+.side.active{--lcd:#b9d0a3}
+.side.low{--lcd:#8f8a78}
+.side.low.active{--lcd:#dcb08f}
+.side.flagged{--lcd:#c98c8c}
+.lcd svg{width:100%;height:100%;display:block}
+.seg{fill:var(--seg,#141b12)}
+.seg.off{opacity:.08}
+.side.active .colon{animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:.1}}
+
+.meta{flex:none;padding:6px 3px 0;font-size:11px;color:var(--dim);
+  height:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ── 操作バー ───────────────────────────── */
+#bar{height:68px;flex:none;display:flex;align-items:center;justify-content:center;
+  gap:9px;position:relative;padding:0 10px}
+.btn{border:none;background:#232a34;color:#e7ecf3;border-radius:13px;padding:0 17px;height:44px;
+  font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px;font-family:inherit}
 .btn:active{background:#323b48}
-.btn.wide{flex:1;max-width:190px;justify-content:center;background:#2563eb}
+.btn.wide{flex:1;max-width:180px;justify-content:center;background:#2563eb}
 .btn.wide:active{background:#1d4ed8}
-.btn.icon{width:46px;padding:0;justify-content:center;font-size:19px}
-#breakinfo{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:10px;color:#64748b;letter-spacing:.06em}
+.btn.icon{width:44px;padding:0;justify-content:center;font-size:18px}
+#breakinfo{position:absolute;top:1px;left:0;right:0;text-align:center;font-size:10px;color:#64748b;letter-spacing:.05em}
+#hint{display:none;position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:10px;color:#3f4854}
+@media (orientation:portrait){#hint{display:block}}
 
-.overlay{position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:20;display:none;
-  flex-direction:column;align-items:center;justify-content:center;padding:28px;
-  padding-top:calc(28px + env(safe-area-inset-top));padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+/* ── オーバーレイ ───────────────────────── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.94);z-index:20;display:none;
+  flex-direction:column;align-items:center;justify-content:center;padding:26px;
+  padding-top:calc(26px + env(safe-area-inset-top));padding-bottom:calc(26px + env(safe-area-inset-bottom))}
 .overlay.show{display:flex}
-#pauseOv .big{font-size:20px;font-weight:700;letter-spacing:.08em;color:#fbbf24}
-#pauseOv .clock{font-size:64px;font-weight:600;font-variant-numeric:tabular-nums;margin:14px 0 4px}
-#pauseOv .sub{font-size:13px;color:#8b95a5;margin-bottom:30px}
-#pauseOv .btn.wide{max-width:260px;width:100%;height:58px;font-size:17px;background:#16a34a}
+#pauseOv .big{font-size:19px;font-weight:700;letter-spacing:.08em;color:#fbbf24}
+#pauseOv .clock{font-size:58px;font-weight:600;font-variant-numeric:tabular-nums;margin:12px 0 4px}
+#pauseOv .sub{font-size:13px;color:#8b95a5;margin-bottom:26px}
+#pauseOv .btn.wide{max-width:260px;width:100%;height:56px;font-size:17px;background:#16a34a}
 
 #setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #setOv h2{font-size:17px;margin:0 0 4px;align-self:flex-start}
-#setOv .hint{font-size:12px;color:#8b95a5;margin:0 0 18px;align-self:flex-start;line-height:1.6}
+#setOv .hint{font-size:12px;color:#8b95a5;margin:0 0 16px;align-self:flex-start;line-height:1.6}
 .opt{width:100%;max-width:440px;background:#161b22;border:1.5px solid #262e3a;border-radius:14px;
-  padding:13px 15px;margin-bottom:9px;display:flex;flex-direction:column;gap:3px}
+  padding:12px 15px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px}
 .opt.sel{border-color:#3b82f6;background:#132033}
 .opt .t{font-size:15px;font-weight:600}
 .opt .d{font-size:12px;color:#93a0b1}
-#customBox{width:100%;max-width:440px;display:none;gap:9px;flex-direction:column;margin:2px 0 10px}
+#customBox{width:100%;max-width:440px;display:none;gap:8px;flex-direction:column;margin:2px 0 10px}
 #customBox.show{display:flex}
 .row{display:flex;align-items:center;justify-content:space-between;background:#12161c;
   border-radius:11px;padding:10px 14px;font-size:14px;color:#cbd5e1}
 .row input{width:86px;background:#1e252f;border:1px solid #2d3643;color:#fff;border-radius:8px;
   padding:8px 10px;font-size:16px;text-align:right;font-family:inherit}
-#setOv .actions{width:100%;max-width:440px;display:flex;gap:10px;margin-top:14px;padding-bottom:20px}
-#setOv .actions .btn{flex:1;justify-content:center;height:52px}
-.toggle{width:100%;max-width:440px;margin-bottom:9px}
+#setOv .actions{width:100%;max-width:440px;display:flex;gap:10px;margin-top:12px;padding-bottom:20px}
+#setOv .actions .btn{flex:1;justify-content:center;height:50px}
+.toggle{width:100%;max-width:440px;margin-bottom:8px}
 </style>
 </head>
 <body>
 <div id="app">
-  <div class="side b pre" id="top" data-i="1">
-    <div class="wm" id="wm1">♚</div>
-    <div class="badge" id="badge1"></div>
-    <div class="name" id="name1">BLACK</div>
-    <div class="time" id="time1">1:30:00</div>
-    <div class="meta" id="meta1"></div>
+  <div id="clock">
+    <div class="side w pre" id="s0" data-i="0">
+      <div class="head"><span class="pc" id="pc0">♔</span><span class="nm" id="nm0">WHITE</span><span class="badge" id="badge0"></span></div>
+      <div class="lcd" id="lcd0"></div>
+      <div class="meta" id="meta0"></div>
+    </div>
+    <div class="side b pre" id="s1" data-i="1">
+      <div class="head"><span class="pc" id="pc1">♚</span><span class="nm" id="nm1">BLACK</span><span class="badge" id="badge1"></span></div>
+      <div class="lcd" id="lcd1"></div>
+      <div class="meta" id="meta1"></div>
+    </div>
   </div>
 
   <div id="bar">
@@ -100,14 +129,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <button class="btn icon" id="btnSet">⚙</button>
     <button class="btn wide" id="btnPause">⏸ 休憩</button>
     <button class="btn icon" id="btnReset">↺</button>
-  </div>
-
-  <div class="side w pre" id="bot" data-i="0">
-    <div class="wm" id="wm0">♔</div>
-    <div class="badge" id="badge0"></div>
-    <div class="name" id="name0">WHITE</div>
-    <div class="time" id="time0">1:30:00</div>
-    <div class="meta" id="meta0"></div>
+    <div id="hint">横向きにすると大きく表示されます</div>
   </div>
 </div>
 
@@ -128,7 +150,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     <div class="row"><span>第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
     <div class="row"><span>通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
   </div>
-  <div class="opt toggle" id="swapOpt"><div class="t">白の位置 <span id="swapState">下</span></div><div class="d">対局者の座る位置に合わせて白黒を入れ替えます（即時反映）</div></div>
+  <div class="opt toggle" id="swapOpt"><div class="t">白の位置 <span id="swapState">左</span></div><div class="d">対局者の座る位置に合わせて入れ替えます（即時反映）</div></div>
   <div class="opt toggle" id="soundOpt"><div class="t">効果音 <span id="soundState">ON</span></div><div class="d">着手時のクリック音と時間切れ音</div></div>
   <div class="actions">
     <button class="btn" id="btnCancel">キャンセル</button>
@@ -137,6 +159,52 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 </div>
 
 <script>
+/* ═══ 7セグメント液晶の描画 ══════════════════════════════
+   外部フォントを使わず、セグメントをSVGで直接描く。
+   消灯セグメントも薄く残すことで実機の液晶らしくなる。 */
+const DW=60, DH=104, T=13, PAD=3, GAP=2.2;
+const yT=PAD+T/2, yM=DH/2, yB=DH-PAD-T/2, xL=PAD+T/2, xR=DW-PAD-T/2;
+function hseg(y,x1,x2){const t=T/2;x1+=GAP;x2-=GAP;
+  return `${x1},${y} ${x1+t},${y-t} ${x2-t},${y-t} ${x2},${y} ${x2-t},${y+t} ${x1+t},${y+t}`}
+function vseg(x,y1,y2){const t=T/2;y1+=GAP;y2-=GAP;
+  return `${x},${y1} ${x+t},${y1+t} ${x+t},${y2-t} ${x},${y2} ${x-t},${y2-t} ${x-t},${y1+t}`}
+const PTS={a:hseg(yT,xL,xR), g:hseg(yM,xL,xR), d:hseg(yB,xL,xR),
+           f:vseg(xL,yT,yM), b:vseg(xR,yT,yM), e:vseg(xL,yM,yB), c:vseg(xR,yM,yB)};
+const SEG={'0':'abcdef','1':'bc','2':'abged','3':'abgcd','4':'fbgc','5':'afgcd',
+           '6':'afgecd','7':'abc','8':'abcdefg','9':'abfgcd',' ':''};
+
+// '_' は桁揃えのための不可視コロン（時間表示が1桁減っても幅が動かない）
+function segSvg(str){
+  let x=0, out='';
+  for(const ch of str){
+    if(ch===':'||ch==='_'){
+      if(ch===':') out+=`<circle class="seg colon" cx="${x+11}" cy="${DH*.33}" r="6.5"/>`
+                      +`<circle class="seg colon" cx="${x+11}" cy="${DH*.70}" r="6.5"/>`;
+      x+=23;
+    }else if(ch==='.'){
+      out+=`<circle class="seg" cx="${x+9}" cy="${yB}" r="6.5"/>`; x+=19;
+    }else{
+      const on=SEG[ch]||'';
+      let g='';
+      for(const k of 'abcdefg') g+=`<polygon class="seg${on.includes(k)?'':' off'}" points="${PTS[k]}"/>`;
+      out+=`<g transform="translate(${x},0)">${g}</g>`; x+=DW+6;
+    }
+  }
+  return `<svg viewBox="0 0 ${x} ${DH}" preserveAspectRatio="xMidYMid meet">${out}</svg>`;
+}
+
+const p2=n=>String(n).padStart(2,'0');
+// 1時間以上: H:MM:SS ／ 20秒未満: MM:SS.D ／ それ以外: _MM:SS
+function pattern(ms){
+  if(ms<0) ms=0;
+  const ts=Math.floor(ms/100), s=Math.floor(ts/10);
+  const h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
+  if(h>0) return h+':'+p2(m)+':'+p2(ss);
+  if(s<20) return '_'+p2(m)+':'+p2(ss)+'.'+(ts%10);
+  return '_'+p2(m)+':'+p2(ss);
+}
+
+/* ═══ 持ち時間プリセット ══════════════════════════════ */
 const PRESETS = [
   {id:'fide',   t:'クラシカル（FIDE標準）', d:'90分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:90*60},{moves:0,base:30*60}]},
   {id:'wcc',    t:'世界選手権型',           d:'120分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:120*60},{moves:0,base:30*60}]},
@@ -145,20 +213,21 @@ const PRESETS = [
   {id:'blitz',  t:'ブリッツ',               d:'3分 + 2秒加算',               inc:2,  stages:[{moves:0,base:3*60}]},
   {id:'custom', t:'カスタム',               d:'自分で設定する',              custom:true}
 ];
-const LS='chessclock.v1';
+const LS='chessclock.v2';
 let cfg = load();
 
 function load(){
   try{ const s=JSON.parse(localStorage.getItem(LS)); if(s&&s.tc) return s; }catch(e){}
-  return {sel:'fide', tc:PRESETS[0], sound:true, custom:{base:90,inc:30,moves:40,add:30}};
+  return {sel:'fide', tc:PRESETS[0], sound:true, whiteLeft:true, custom:{base:90,inc:30,moves:40,add:30}};
 }
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
 
-let P, active, started, over, paused, t0, ms0, breakMs, breakStart, raf;
+/* ═══ 対局状態 ══════════════════════════════════════ */
+let P, active, started, over, paused, t0, ms0, breakMs, breakStart;
 
 function reset(){
   const tc = cfg.tc;
-  P = [0,1].map(()=>({ms: tc.stages[0].base*1000, moves:0, stage:0, inStage:0, flag:false}));
+  P = [0,1].map(()=>({ms: tc.stages[0].base*1000, moves:0, stage:0, inStage:0, flag:false, sig:''}));
   active=null; started=false; over=false; paused=false;
   breakMs=0; breakStart=0;
   document.getElementById('pauseOv').classList.remove('show');
@@ -193,6 +262,11 @@ function onMove(i){
   }
 }
 
+// 白が左か（座る位置に合わせて入れ替え可能）
+function whiteLeft(){ return cfg.whiteLeft !== false; }
+function isWhite(i){ return (i===0) === whiteLeft(); }
+function whiteIndex(){ return whiteLeft() ? 0 : 1; }
+
 function tap(i){
   if(over||paused) return;
   beep(660,.04);
@@ -219,29 +293,22 @@ function resume(){
   wake();
 }
 
-function fmt(ms){
-  if(ms<0) ms=0;
-  const ts=Math.floor(ms/100), s=Math.floor(ts/10), h=Math.floor(s/3600), m=Math.floor(s%3600/60), ss=s%60;
-  if(h>0) return h+':'+String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
-  if(s<20) return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0')+'.'+(ts%10);
-  return String(m).padStart(2,'0')+':'+String(ss).padStart(2,'0');
-}
 function fmtShort(ms){
   const s=Math.floor(ms/1000);
-  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  return p2(Math.floor(s/60))+':'+p2(s%60);
 }
 
-// 白が下側か（座る位置に合わせて入れ替え可能）
-function whiteBottom(){ return cfg.whiteBottom !== false; }
-function isWhite(i){ return (i===0) === whiteBottom(); }
-function whiteIndex(){ return whiteBottom() ? 0 : 1; }
-
+/* ═══ 描画 ══════════════════════════════════════════ */
 function render(){
-  const els=[document.getElementById('bot'),document.getElementById('top')];
+  const els=[document.getElementById('s0'),document.getElementById('s1')];
   for(let i=0;i<2;i++){
     const r=remaining(i), p=P[i], el=els[i], w=isWhite(i);
     const turn = active===i && !paused && !over;
-    document.getElementById('time'+i).textContent = fmt(r);
+
+    // 液晶は表示文字列が変わったときだけ描き直す
+    const sig = pattern(r);
+    if(sig !== p.sig){ p.sig=sig; document.getElementById('lcd'+i).innerHTML = segSvg(sig); }
+
     el.classList.toggle('w', w);
     el.classList.toggle('b', !w);
     el.classList.toggle('pre', !started && !over);
@@ -249,16 +316,18 @@ function render(){
     el.classList.toggle('idle', started && !turn && !over);
     el.classList.toggle('low', r<60000);
     el.classList.toggle('flagged', p.flag);
-    document.getElementById('wm'+i).textContent = w ? '♔' : '♚';
-    document.getElementById('name'+i).textContent = w ? '♔ WHITE' : '♚ BLACK';
+
+    document.getElementById('pc'+i).textContent = w ? '♔' : '♚';
+    document.getElementById('nm'+i).textContent = w ? 'WHITE' : 'BLACK';
     document.getElementById('badge'+i).textContent =
       p.flag ? '時間切れ' : turn ? '手番' : (!started && !over && w) ? '先手' : '';
+
     const st=cfg.tc.stages[p.stage];
     let meta = p.moves+'手';
-    if(st&&st.moves>0) meta += ' ／ 第'+(p.stage+1)+'期間まであと'+(st.moves-p.inStage)+'手';
-    else if(p.stage>0) meta += ' ／ 最終期間';
-    if(!started) meta = 'タップして対局開始（白の時計から）';
-    document.getElementById('meta'+i).textContent = over&&p.flag ? '負け（時間切れ）' : meta;
+    if(st&&st.moves>0) meta += ' / あと'+(st.moves-p.inStage)+'手';
+    else if(p.stage>0) meta += ' / 最終期間';
+    if(!started) meta = w ? 'タップで開始' : '白の手番から';
+    document.getElementById('meta'+i).textContent = over&&p.flag ? '時間切れ負け' : meta;
   }
   document.getElementById('breakinfo').textContent = breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
@@ -267,18 +336,16 @@ function render(){
 }
 
 function tick(){
-  if(started&&!paused&&!over&&active!==null){
-    if(remaining(active)<=0){
-      P[active].ms=0; P[active].flag=true; over=true;
-      beep(180,.6);
-    }
+  if(started&&!paused&&!over&&active!==null&&remaining(active)<=0){
+    P[active].ms=0; P[active].flag=true; over=true;
+    beep(180,.6);
   }
   if(paused) document.getElementById('breakClock').textContent = fmtShort(breakMs+(performance.now()-breakStart));
   render();
-  raf=requestAnimationFrame(tick);
+  requestAnimationFrame(tick);
 }
 
-// --- sound ---
+/* ═══ 効果音 / スリープ防止 ══════════════════════════ */
 let ac=null;
 function beep(f,d){
   if(!cfg.sound) return;
@@ -292,22 +359,20 @@ function beep(f,d){
     o.start(); o.stop(ac.currentTime+d);
   }catch(e){}
 }
-
-// --- wake lock ---
 let wl=null;
 async function wake(){
   try{ if('wakeLock' in navigator && !wl) wl = await navigator.wakeLock.request('screen'); }catch(e){}
 }
 document.addEventListener('visibilitychange',()=>{ wl=null; if(started&&!paused&&!over) wake(); });
 
-// --- settings UI ---
+/* ═══ 設定画面 ══════════════════════════════════════ */
 function buildPresets(){
   const box=document.getElementById('presets'); box.innerHTML='';
   PRESETS.forEach(p=>{
     const d=document.createElement('div');
     d.className='opt'+(cfg.sel===p.id?' sel':'');
     d.innerHTML='<div class="t">'+p.t+'</div><div class="d">'+p.d+'</div>';
-    d.onclick=()=>{ cfg.sel=p.id; buildPresets(); document.getElementById('customBox').classList.toggle('show',p.custom); };
+    d.onclick=()=>{ cfg.sel=p.id; buildPresets(); document.getElementById('customBox').classList.toggle('show',!!p.custom); };
     box.appendChild(d);
   });
   document.getElementById('customBox').classList.toggle('show', cfg.sel==='custom');
@@ -317,7 +382,7 @@ function openSet(){
   const c=cfg.custom;
   cBase.value=c.base; cInc.value=c.inc; cMoves.value=c.moves; cAdd.value=c.add;
   document.getElementById('soundState').textContent = cfg.sound?'ON':'OFF';
-  document.getElementById('swapState').textContent = whiteBottom()?'下':'上';
+  document.getElementById('swapState').textContent = whiteLeft()?'左':'右';
   document.getElementById('setOv').classList.add('show');
 }
 function applySet(){
@@ -337,9 +402,9 @@ function applySet(){
   reset();
 }
 
-// --- bind ---
-document.getElementById('bot').addEventListener('pointerdown',e=>{e.preventDefault();tap(0);});
-document.getElementById('top').addEventListener('pointerdown',e=>{e.preventDefault();tap(1);});
+/* ═══ 入力 ══════════════════════════════════════════ */
+document.getElementById('s0').addEventListener('pointerdown',e=>{e.preventDefault();tap(0);});
+document.getElementById('s1').addEventListener('pointerdown',e=>{e.preventDefault();tap(1);});
 document.getElementById('btnPause').onclick=()=>paused?resume():pause();
 document.getElementById('btnResume').onclick=resume;
 document.getElementById('btnSet').onclick=openSet;
@@ -351,8 +416,8 @@ document.getElementById('soundOpt').onclick=()=>{
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
 };
 document.getElementById('swapOpt').onclick=()=>{
-  cfg.whiteBottom=!whiteBottom(); save();
-  document.getElementById('swapState').textContent=whiteBottom()?'下':'上';
+  cfg.whiteLeft=!whiteLeft(); save();
+  document.getElementById('swapState').textContent=whiteLeft()?'左':'右';
   render();
 };
 document.addEventListener('gesturestart',e=>e.preventDefault());
@@ -360,7 +425,7 @@ document.addEventListener('dblclick',e=>e.preventDefault());
 
 reset(); tick();
 
-// --- offline (service worker) ---
+/* ═══ オフライン対応 ════════════════════════════════ */
 if('serviceWorker' in navigator && location.protocol==='https:'){
   addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
 }
