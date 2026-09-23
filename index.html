@@ -108,6 +108,10 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 #setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #setOv h2{font-size:17px;margin:0 0 4px;align-self:flex-start}
 #setOv .hint{font-size:12px;color:#8b95a5;margin:0 0 16px;align-self:flex-start;line-height:1.6}
+#presets{width:100%;max-width:440px;display:flex;flex-direction:column}
+.grp{font-size:11px;font-weight:700;letter-spacing:.12em;color:#6b7887;
+  margin:15px 0 7px;padding-left:3px}
+.grp:first-child{margin-top:0}
 .opt{width:100%;max-width:440px;background:#161b22;border:1.5px solid #262e3a;border-radius:14px;
   padding:12px 15px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px}
 .opt.sel{border-color:#3b82f6;background:#132033}
@@ -246,20 +250,35 @@ const p2=n=>String(n).padStart(2,'0');
 const p3=n=>String(Math.min(999,n)).padStart(3,'0');
 
 /* ═══ 持ち時間プリセット ══════════════════════════════ */
+/* 並びは chess.com の対局作成画面に合わせる（バレット／ブリッツ／ラピッド各3種） */
 const PRESETS = [
-  {id:'fide',   t:'クラシカル（FIDE標準）', d:'90分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:90*60},{moves:0,base:30*60}]},
-  {id:'wcc',    t:'世界選手権型',           d:'120分/40手 + 30分 + 30秒加算', inc:30, stages:[{moves:40,base:120*60},{moves:0,base:30*60}]},
-  {id:'single', t:'クラシカル（単一期間）',  d:'90分 + 30秒加算',             inc:30, stages:[{moves:0,base:90*60}]},
-  {id:'rapid',  t:'ラピッド',               d:'15分 + 10秒加算',             inc:10, stages:[{moves:0,base:15*60}]},
-  {id:'blitz',  t:'ブリッツ',               d:'3分 + 2秒加算',               inc:2,  stages:[{moves:0,base:3*60}]},
-  {id:'custom', t:'カスタム',               d:'自分で設定する',              custom:true}
+  {id:'b1',    g:'バレット',   t:'1分',      d:'1分 切れ負け',                inc:0,  stages:[{moves:0,base:60}]},
+  {id:'b11',   g:'バレット',   t:'1 | 1',    d:'1分 + 1秒加算',               inc:1,  stages:[{moves:0,base:60}]},
+  {id:'b21',   g:'バレット',   t:'2 | 1',    d:'2分 + 1秒加算',               inc:1,  stages:[{moves:0,base:120}]},
+
+  {id:'z3',    g:'ブリッツ',   t:'3分',      d:'3分 切れ負け（オンライン最多）', inc:0,  stages:[{moves:0,base:180}]},
+  {id:'z32',   g:'ブリッツ',   t:'3 | 2',    d:'3分 + 2秒加算（FIDE公式）',    inc:2,  stages:[{moves:0,base:180}]},
+  {id:'z5',    g:'ブリッツ',   t:'5分',      d:'5分 切れ負け（対面の定番）',    inc:0,  stages:[{moves:0,base:300}]},
+
+  {id:'r10',   g:'ラピッド',   t:'10分',     d:'10分 切れ負け',               inc:0,  stages:[{moves:0,base:600}]},
+  {id:'r1510', g:'ラピッド',   t:'15 | 10',  d:'15分 + 10秒加算（FIDE公式）',  inc:10, stages:[{moves:0,base:900}]},
+  {id:'r30',   g:'ラピッド',   t:'30分',     d:'30分 切れ負け',               inc:0,  stages:[{moves:0,base:1800}]},
+
+  {id:'fide',  g:'クラシカル', t:'90 | 30 ・40手', d:'90分/40手 + 30分 + 30秒加算（FIDE標準）', inc:30, stages:[{moves:40,base:5400},{moves:0,base:1800}]},
+  {id:'wcc',   g:'クラシカル', t:'120 | 30 ・40手',d:'120分/40手 + 30分 + 30秒加算',           inc:30, stages:[{moves:40,base:7200},{moves:0,base:1800}]},
+  {id:'single',g:'クラシカル', t:'90 | 30',  d:'90分 + 30秒加算',             inc:30, stages:[{moves:0,base:5400}]},
+
+  {id:'custom',g:'その他',     t:'カスタム',  d:'自分で設定する',              custom:true}
 ];
-const LS='chessclock.v3';
+const DEFAULT_ID='r10';   // chess.com と同じく 10分ラピッドを既定に
+const LS='chessclock.v4';
 let cfg = load();
 
 function load(){
   try{ const s=JSON.parse(localStorage.getItem(LS)); if(s&&s.tc) return s; }catch(e){}
-  return {sel:'fide', tc:PRESETS[0], sound:true, custom:{base:90,inc:30,moves:40,add:30}};
+  const d=PRESETS.find(p=>p.id===DEFAULT_ID);
+  return {sel:d.id, tc:{inc:d.inc, stages:d.stages}, sound:true,
+          custom:{base:10,inc:0,moves:0,add:0}};
 }
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
 
@@ -407,7 +426,14 @@ document.addEventListener('visibilitychange',()=>{ wl=null; if(started&&!paused&
 /* ═══ 設定画面 ══════════════════════════════════════ */
 function buildPresets(){
   const box=document.getElementById('presets'); box.innerHTML='';
+  let group=null;
   PRESETS.forEach(p=>{
+    if(p.g!==group){
+      group=p.g;
+      const h=document.createElement('div');
+      h.className='grp'; h.textContent=group;
+      box.appendChild(h);
+    }
     const d=document.createElement('div');
     d.className='opt'+(cfg.sel===p.id?' sel':'');
     d.innerHTML='<div class="t">'+p.t+'</div><div class="d">'+p.d+'</div>';
