@@ -34,26 +34,29 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
    押した側はフラットに寝たまま動かさず、動作中の側だけが
    中央の合わせ目を支点に、外側の端へ向かって斜めに持ち上がる。
    下には決して沈まないので液晶部分に重なることがない。 */
-#deck{height:62px;padding:14px 8px 10px;margin-bottom:9px;
+#deck{height:66px;padding:21px 8px 10px;margin-bottom:9px;
   border-radius:13px;background:linear-gradient(#090b0d,#171b20);
   box-shadow:inset 0 2px 7px rgba(0,0,0,.85)}
 #rocker{height:100%;display:flex}
-/* 下端から4pxを濃くして側面の厚みに見せる。px指定なので背が高くなっても厚みは一定 */
+/* 下端から5pxを濃くして側面の厚みに見せる。px指定なので背が高くなっても厚みは一定 */
 .half{flex:1;min-width:0;cursor:pointer;
   background:linear-gradient(to top,
-    #9fa5ad 0,#bcc2ca 4px,#e2e6ea 5px,#f5f7f9 15px,#fff 100%);
+    #9aa0a8 0,#b8bec6 5px,#e2e6ea 6px,#f5f7f9 16px,#fff 100%);
   filter:drop-shadow(0 3px 4px rgba(0,0,0,.5));
   clip-path:polygon(0 0,100% 0,100% 100%,0 100%);
-  transition:margin-top .17s cubic-bezier(.34,1.15,.5,1),
-             clip-path .17s cubic-bezier(.34,1.15,.5,1)}
+  transition:margin-top .18s cubic-bezier(.34,1.15,.5,1),
+             clip-path .18s cubic-bezier(.34,1.15,.5,1),
+             filter .18s ease}
 .half:first-child{border-radius:12px 2px 2px 8px;border-right:1px solid rgba(0,0,0,.05)}
 .half:last-child{border-radius:2px 12px 8px 2px}
 /* 浮く側は上に伸ばして天面だけを斜めに切る。下端は押された側と揃ったまま、
-   合わせ目から外側へ向かって厚みが増す楔形になる */
-#rocker.upL .half:first-child{margin-top:-11px;
-  clip-path:polygon(0 0,100% 11px,100% 100%,0 100%)}
-#rocker.upR .half:last-child{margin-top:-11px;
-  clip-path:polygon(0 11px,100% 0,100% 100%,0 100%)}
+   合わせ目から外側へ向かって厚みが増す楔形になる。影も強めて高さを強調 */
+#rocker.upL .half:first-child{margin-top:-18px;
+  clip-path:polygon(0 0,100% 18px,100% 100%,0 100%);
+  filter:drop-shadow(0 6px 9px rgba(0,0,0,.62))}
+#rocker.upR .half:last-child{margin-top:-18px;
+  clip-path:polygon(0 18px,100% 0,100% 100%,0 100%);
+  filter:drop-shadow(0 6px 9px rgba(0,0,0,.62))}
 
 /* 桁の高さに合わせて液晶面の高さを決める＝上下に無駄な余白を作らない */
 #panel{width:100%;aspect-ratio:7.4;
