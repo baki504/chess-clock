@@ -30,21 +30,22 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   background:linear-gradient(#15181c,#05070a);border-radius:20px;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 30px rgba(0,0,0,.75)}
 
-/* ── 天板のプランジャー ─────────────────── */
-#deck{height:56px;display:flex;gap:4px;padding:8px 9px;margin-bottom:9px;
+/* ── 天板のロッカー（シーソー） ───────────
+   2枚に割らず、1枚のバーが中心を軸に傾く。実機と同じく
+   押した側が沈み、反対側が持ち上がる。 */
+#deck{height:56px;padding:7px 8px;margin-bottom:10px;
   border-radius:13px;background:linear-gradient(#090b0d,#171b20);
   box-shadow:inset 0 2px 7px rgba(0,0,0,.85)}
-.plunger{flex:1;min-width:0;border:none;padding:0;cursor:pointer;
-  border-radius:10px 10px 6px 6px;
-  background:linear-gradient(#fff 0%,#f3f5f7 55%,#dcdfe3 100%);
-  box-shadow:0 6px 0 #a7adb4,0 9px 12px rgba(0,0,0,.55),inset 0 1px 0 #fff;
-  transform:translateY(-4px);
-  transition:transform .13s cubic-bezier(.4,0,.2,1),box-shadow .13s ease}
-/* 押された側が凹む（＝相手の時計が動いている状態） */
-.plunger.down{
-  background:linear-gradient(#e9ecee 0%,#d3d7db 100%);
-  box-shadow:0 1px 0 #a7adb4,0 2px 5px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.7);
-  transform:translateY(5px)}
+#rocker{height:100%;display:flex;
+  border-radius:12px 12px 7px 7px;
+  background:linear-gradient(#fff 0%,#f6f8f9 52%,#dcdfe3 100%);
+  box-shadow:0 5px 0 #a7adb4,0 8px 13px rgba(0,0,0,.55),inset 0 1px 0 #fff;
+  transform-origin:50% 50%;
+  transition:transform .16s cubic-bezier(.34,1.2,.5,1)}
+#rocker.tiltL{transform:rotate(-1.1deg)}   /* 左が沈む＝右の時計が動作中 */
+#rocker.tiltR{transform:rotate(1.1deg)}    /* 右が沈む＝左の時計が動作中 */
+.half{flex:1;min-width:0;cursor:pointer}
+.half:first-child{border-right:1px solid rgba(0,0,0,.06)}
 
 /* 桁の高さに合わせて液晶面の高さを決める＝上下に無駄な余白を作らない */
 #panel{width:100%;aspect-ratio:7.4;
@@ -132,8 +133,10 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 <div id="app">
   <div id="device">
     <div id="deck">
-      <div class="plunger" id="pl0"></div>
-      <div class="plunger" id="pl1"></div>
+      <div id="rocker">
+        <div class="half" id="pl0"></div>
+        <div class="half" id="pl1"></div>
+      </div>
     </div>
 
     <div id="panel">
@@ -369,11 +372,13 @@ function strings(i){
 
 function render(){
   const panes=[document.getElementById('p0'),document.getElementById('p1')];
-  const plungers=[document.getElementById('pl0'),document.getElementById('pl1')];
+  // 押した側が沈んだまま＝相手の時計が動いている（実機のシーソーと同じ）
+  const rocker=document.getElementById('rocker');
+  rocker.classList.toggle('tiltL', started && active===1);
+  rocker.classList.toggle('tiltR', started && active===0);
+
   for(let i=0;i<2;i++){
     const r=remaining(i), p=P[i], el=panes[i];
-    // 押した側が凹んだまま＝相手の時計が動いている（実機のシーソーと同じ）
-    plungers[i].classList.toggle('down', started && active!==i);
     const st=strings(i), sig=st.big+'|'+st.mv+'|'+st.sec;
     if(sig!==p.sig){ p.sig=sig; el.innerHTML=sideSvg(st.big, st.mv, st.sec); }
     el.classList.toggle('pre', !started && !over);
