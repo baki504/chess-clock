@@ -31,7 +31,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 10px 30px rgba(0,0,0,.75)}
 
 /* ── 天板のロッカー（シーソー） ───────────
-   押した側はフラットに寝たまま動かさず、動作中の側だけが
+   沈んでいる側＝いま時計が動いている側。止まっている側だけが
    中央の合わせ目を支点に、外側の端へ向かって斜めに持ち上がる。
    下には決して沈まないので液晶部分に重なることがない。 */
 #deck{height:83px;padding:21px 8px 10px;margin-bottom:9px;
@@ -196,7 +196,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 
     <div id="bar">
       <button class="btn icon" id="btnSet">&#9881;&#65038;</button>
-      <button class="btn wide" id="btnPause">&#9208;&#65038; 休憩</button>
+      <button class="btn wide" id="btnPause">&#9654;&#65038;</button>
       <button class="btn icon" id="btnReset">↺</button>
     </div>
   </div>
@@ -312,7 +312,7 @@ const p3=n=>String(Math.min(999,n)).padStart(3,'0');
 const I18N={
  ja:{
   hintRotate:'横向きにすると大きく表示されます',
-  startHint:'天板のボタンを押すと反対側の時計が動きます',
+  startHint:'先手側を沈めてから ▶ で対局開始',
   breakTotal:'休憩合計',
   pause:'休憩', resume:'再開',
   pauseTitle:'休 憩 中', pauseSub:'両者の時計は止まっています',
@@ -328,7 +328,7 @@ const I18N={
  },
  en:{
   hintRotate:'Rotate to landscape for a larger display',
-  startHint:'Press a top button to start the other clock',
+  startHint:'Lower the starting side, then press \u25B6',
   breakTotal:'Break total',
   pause:'Break', resume:'Resume',
   pauseTitle:'P A U S E D', pauseSub:'Both clocks are stopped',
@@ -387,11 +387,14 @@ function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){}
 
 /* ═══ 対局状態 ══════════════════════════════════════ */
 let P, active, started, over, paused, t0, ms0, breakMs, breakStart, midSig='';
+// 沈んでいる側。対局前は開始する側の選択、対局中は直前に押した側を表す
+let pressed = 0;
 
 function reset(){
   const tc=cfg.tc;
   P=[0,1].map(()=>({ms: tc.stages[0].base*1000, moves:0, stage:0, inStage:0, flag:false, sig:''}));
   active=null; started=false; over=false; paused=false;
+  pressed=0;                       // 既定は左が沈んだ状態
   breakMs=0; breakStart=0; midSig='';
   document.getElementById('pauseOv').classList.remove('show');
   render();
@@ -428,13 +431,21 @@ function onMove(i){
 function tap(i){
   if(over||paused) return;
   beep(660,.04);
-  // 実機と同じく「自分側を押す＝相手の時計が動く」。対局開始時も同じ意味なので、
-  // アプリ側が先手の位置を知る必要はない（後手が押して先手の時計を動かす）。
-  if(active===null){ setActive(1-i); return; }
+  // 対局前はロッカーが「どちらから開始するか」の選択スイッチ。何度でも切り替えられる
+  if(!started){ pressed=i; render(); return; }
+  // 対局中は「自分側を押す＝自分が止まって相手が動く」。
+  // 沈むのは常に動き出す側なので、押した本人ではなく相手側が沈む。
   if(active!==i) return;
   commit();
   onMove(i);
+  pressed=1-i;
   setActive(1-i);
+}
+
+// ▶ で対局開始。沈んでいる側の時計から動き出す
+function start(){
+  if(started||over) return;
+  setActive(pressed);
 }
 
 function pause(){
@@ -470,10 +481,11 @@ function strings(i){
 
 function render(){
   const panes=[document.getElementById('p0'),document.getElementById('p1')];
-  // 動作中の側だけが持ち上がる（＝押された側はフラットに寝たまま）
+  // 沈んでいる側＝いま動いている側（対局前は「これから動く側」）で一貫させる
+  const up = 1-pressed;
   const rocker=document.getElementById('rocker');
-  rocker.classList.toggle('upL', started && active===0);
-  rocker.classList.toggle('upR', started && active===1);
+  rocker.classList.toggle('upL', up===0);
+  rocker.classList.toggle('upR', up===1);
 
   for(let i=0;i<2;i++){
     const r=remaining(i), p=P[i], el=panes[i];
@@ -494,8 +506,8 @@ function render(){
     !started ? t('startHint')
   : breakMs>1000 ? t('breakTotal')+' '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
-  bp.textContent = paused ? '\u25B6\uFE0E '+t('resume') : '\u23F8\uFE0E '+t('pause');
-  bp.style.opacity = (!started||over) ? .4 : 1;
+  bp.textContent = (started && !paused) ? '\u23F8\uFE0E' : '\u25B6\uFE0E';
+  bp.style.opacity = over ? .4 : 1;
 }
 
 function tick(){
@@ -576,7 +588,9 @@ function applySet(){
 for(const [id,i] of [['pl0',0],['pl1',1]]){
   document.getElementById(id).addEventListener('pointerdown',e=>{e.preventDefault();tap(i);});
 }
-document.getElementById('btnPause').onclick=()=>paused?resume():pause();
+document.getElementById('btnPause').onclick=()=>{
+  if(!started) start(); else if(paused) resume(); else pause();
+};
 document.getElementById('btnResume').onclick=resume;
 document.getElementById('btnSet').onclick=openSet;
 document.getElementById('btnCancel').onclick=()=>document.getElementById('setOv').classList.remove('show');
