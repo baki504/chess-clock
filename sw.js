@@ -1,5 +1,5 @@
 /* Chess Clock — offline cache */
-const CACHE = 'chess-clock-v19';
+const CACHE = 'chess-clock-v20';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', e => {
