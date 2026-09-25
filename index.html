@@ -309,7 +309,6 @@ const I18N={
  ja:{
   hintRotate:'横向きにすると大きく表示されます',
   startHint:'先手側を浮かせて ▶ で対局開始',
-  breakTotal:'休憩合計',
   paused:'休憩中 — ▶ で再開',
   setTitle:'持ち時間の設定', setHint:'変更すると対局はリセットされます',
   cBase:'初期持ち時間（分）', cInc:'1手ごとの加算（秒）',
@@ -324,7 +323,6 @@ const I18N={
  en:{
   hintRotate:'Rotate to landscape for a larger display',
   startHint:'Raise the starting side, then press \u25B6',
-  breakTotal:'Break total',
   paused:'PAUSED — press \u25B6 to resume',
   setTitle:'Time control', setHint:'Changing this resets the game',
   cBase:'Base time (min)', cInc:'Increment (sec)',
@@ -380,7 +378,7 @@ function load(){
 function save(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
 
 /* ═══ 対局状態 ══════════════════════════════════════ */
-let P, active, started, over, paused, t0, ms0, breakMs, breakStart, midSig='';
+let P, active, started, over, paused, t0, ms0, midSig='';
 // 沈んでいる側＝止まっている側。対局前は「先手ではない方」を沈めておく
 let pressed = 1;
 
@@ -389,7 +387,7 @@ function reset(){
   P=[0,1].map(()=>({ms: tc.stages[0].base*1000, moves:0, stage:0, inStage:0, flag:false, sig:''}));
   active=null; started=false; over=false; paused=false;
   pressed=1;                       // 既定は右が沈む＝左（先手）が浮いた状態
-  breakMs=0; breakStart=0; midSig='';
+  midSig='';
   render();
 }
 
@@ -442,20 +440,14 @@ function start(){
 
 function pause(){
   if(!started||over||paused) return;
-  commit(); paused=true; breakStart=performance.now();
+  commit(); paused=true;
   render();
 }
 function resume(){
   if(!paused) return;
-  breakMs += performance.now()-breakStart;
   paused=false;
   if(active!==null){ ms0=P[active].ms; t0=performance.now(); }
   wake();
-}
-
-function fmtShort(ms){
-  const s=Math.floor(ms/1000);
-  return p2(Math.floor(s/60))+':'+p2(s%60);
 }
 
 /* ═══ 描画 ══════════════════════════════════════════ */
@@ -494,10 +486,7 @@ function render(){
 
   const st=document.getElementById('status');
   st.classList.toggle('paused', paused);
-  st.textContent =
-    !started ? t('startHint')
-  : paused   ? t('paused')+'  '+fmtShort(breakMs+(performance.now()-breakStart))
-  : breakMs>1000 ? t('breakTotal')+' '+fmtShort(breakMs) : '';
+  st.textContent = !started ? t('startHint') : paused ? t('paused') : '';
   const running = started && !paused;
   document.getElementById('gPlay').className  = running ? 'off' : '';
   document.getElementById('gPause').className = running ? '' : 'off';
