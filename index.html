@@ -127,8 +127,8 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 
 #presets{width:100%;max-width:440px;display:flex;flex-direction:column}
 /* 筐体へのシルク印刷のような見出し */
-.grp{font-size:10px;font-weight:700;letter-spacing:.2em;color:#79838f;
-  margin:16px 0 6px;padding-left:2px}
+.grp{width:100%;max-width:440px;font-size:10px;font-weight:700;letter-spacing:.2em;
+  color:#79838f;margin:16px 0 6px;padding-left:2px}
 .grp:first-child{margin-top:0}
 
 /* 選択肢そのものを液晶のセルに見立てる */
@@ -201,30 +201,38 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
     </div>
   </div>
 
-  <div id="hint">横向きにすると大きく表示されます</div>
+  <div id="hint" data-i18n="hintRotate">横向きにすると大きく表示されます</div>
 </div>
 
 <div class="overlay" id="pauseOv">
-  <div class="big">休 憩 中</div>
+  <div class="big" data-i18n="pauseTitle">休 憩 中</div>
   <div class="clock" id="breakClock">00:00</div>
-  <div class="sub">両者の時計は止まっています</div>
+  <div class="sub" data-i18n="pauseSub">両者の時計は止まっています</div>
   <button class="btn wide" id="btnResume">&#9654;&#65038; 再開</button>
 </div>
 
 <div class="overlay" id="setOv">
-  <h2>持ち時間の設定</h2>
-  <p class="hint">変更すると対局はリセットされます</p>
+  <h2 data-i18n="setTitle">持ち時間の設定</h2>
+  <p class="hint" data-i18n="setHint">変更すると対局はリセットされます</p>
   <div id="presets"></div>
   <div id="customBox">
-    <div class="row"><span>初期持ち時間（分）</span><input type="number" id="cBase" inputmode="numeric" min="1" max="600"></div>
-    <div class="row"><span>1手ごとの加算（秒）</span><input type="number" id="cInc" inputmode="numeric" min="0" max="180"></div>
-    <div class="row"><span>第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
-    <div class="row"><span>通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
+    <div class="row"><span data-i18n="cBase">初期持ち時間（分）</span><input type="number" id="cBase" inputmode="numeric" min="1" max="600"></div>
+    <div class="row"><span data-i18n="cInc">1手ごとの加算（秒）</span><input type="number" id="cInc" inputmode="numeric" min="0" max="180"></div>
+    <div class="row"><span data-i18n="cMoves">第1期間の手数（0＝なし）</span><input type="number" id="cMoves" inputmode="numeric" min="0" max="200"></div>
+    <div class="row"><span data-i18n="cAdd">通過後の追加（分）</span><input type="number" id="cAdd" inputmode="numeric" min="0" max="600"></div>
   </div>
-  <div class="opt toggle" id="soundOpt"><div class="t">効果音 <span id="soundState">ON</span></div><div class="d">着手時のクリック音と時間切れ音</div></div>
+  <div class="grp" data-i18n="options">オプション</div>
+  <div class="opt toggle" id="soundOpt">
+    <div class="t"><span data-i18n="sound">効果音</span> <span id="soundState">ON</span></div>
+    <div class="d" data-i18n="soundD">着手時のクリック音と時間切れ音</div>
+  </div>
+
+  <div class="grp" data-i18n="lang">言語</div>
+  <div class="opt toggle" id="langJa"><div class="t">日本語</div></div>
+  <div class="opt toggle" id="langEn"><div class="t">English</div></div>
   <div class="actions">
-    <button class="btn" id="btnCancel">キャンセル</button>
-    <button class="btn wide" id="btnApply">適用してリセット</button>
+    <button class="btn" id="btnCancel" data-i18n="cancel">キャンセル</button>
+    <button class="btn wide" id="btnApply" data-i18n="apply">適用してリセット</button>
   </div>
 </div>
 
@@ -300,25 +308,68 @@ const p2=n=>String(n).padStart(2,'0');
 const p3=n=>String(Math.min(999,n)).padStart(3,'0');
 
 /* ═══ 持ち時間プリセット ══════════════════════════════ */
+/* ═══ 表示言語 ══════════════════════════════════════ */
+const I18N={
+ ja:{
+  hintRotate:'横向きにすると大きく表示されます',
+  startHint:'天板のボタンを押すと反対側の時計が動きます',
+  breakTotal:'休憩合計',
+  pause:'休憩', resume:'再開',
+  pauseTitle:'休 憩 中', pauseSub:'両者の時計は止まっています',
+  setTitle:'持ち時間の設定', setHint:'変更すると対局はリセットされます',
+  cBase:'初期持ち時間（分）', cInc:'1手ごとの加算（秒）',
+  cMoves:'第1期間の手数（0＝なし）', cAdd:'通過後の追加（分）',
+  options:'オプション',
+  sound:'効果音', soundD:'着手時のクリック音と時間切れ音',
+  lang:'言語',
+  cancel:'キャンセル', apply:'適用してリセット',
+  confirmReset:'対局をリセットしますか？',
+  bullet:'バレット', blitz:'ブリッツ', rapid:'ラピッド', classical:'クラシカル', other:'その他'
+ },
+ en:{
+  hintRotate:'Rotate to landscape for a larger display',
+  startHint:'Press a top button to start the other clock',
+  breakTotal:'Break total',
+  pause:'Break', resume:'Resume',
+  pauseTitle:'P A U S E D', pauseSub:'Both clocks are stopped',
+  setTitle:'Time control', setHint:'Changing this resets the game',
+  cBase:'Base time (min)', cInc:'Increment (sec)',
+  cMoves:'Moves in period 1 (0 = none)', cAdd:'Added after period 1 (min)',
+  options:'OPTIONS',
+  sound:'Sound', soundD:'Click on each move, tone on flag fall',
+  lang:'LANGUAGE',
+  cancel:'Cancel', apply:'Apply and reset',
+  confirmReset:'Reset the game?',
+  bullet:'BULLET', blitz:'BLITZ', rapid:'RAPID', classical:'CLASSICAL', other:'OTHER'
+ }
+};
+function lang(){ return cfg && cfg.lang==='en' ? 'en' : 'ja'; }
+function t(k){ return I18N[lang()][k] || k; }
+function L(o){ return typeof o==='string' ? o : (o[lang()] || o.ja); }
+
 /* 並びは chess.com の対局作成画面に合わせる（バレット／ブリッツ／ラピッド各3種） */
 const PRESETS = [
-  {id:'b1',    g:'バレット',   t:'1分',      d:'1分 切れ負け',                inc:0,  stages:[{moves:0,base:60}]},
-  {id:'b11',   g:'バレット',   t:'1 | 1',    d:'1分 + 1秒加算',               inc:1,  stages:[{moves:0,base:60}]},
-  {id:'b21',   g:'バレット',   t:'2 | 1',    d:'2分 + 1秒加算',               inc:1,  stages:[{moves:0,base:120}]},
+  {id:'b1',   g:'bullet', t:{ja:'1分',en:'1 min'},   d:{ja:'1分 切れ負け',en:'1 min, no increment'},  inc:0, stages:[{moves:0,base:60}]},
+  {id:'b11',  g:'bullet', t:{ja:'1 | 1',en:'1 | 1'}, d:{ja:'1分 + 1秒加算',en:'1 min + 1 sec'},       inc:1, stages:[{moves:0,base:60}]},
+  {id:'b21',  g:'bullet', t:{ja:'2 | 1',en:'2 | 1'}, d:{ja:'2分 + 1秒加算',en:'2 min + 1 sec'},       inc:1, stages:[{moves:0,base:120}]},
 
-  {id:'z3',    g:'ブリッツ',   t:'3分',      d:'3分 切れ負け（オンライン最多）', inc:0,  stages:[{moves:0,base:180}]},
-  {id:'z32',   g:'ブリッツ',   t:'3 | 2',    d:'3分 + 2秒加算（FIDE公式）',    inc:2,  stages:[{moves:0,base:180}]},
-  {id:'z5',    g:'ブリッツ',   t:'5分',      d:'5分 切れ負け（対面の定番）',    inc:0,  stages:[{moves:0,base:300}]},
+  {id:'z3',   g:'blitz',  t:{ja:'3分',en:'3 min'},   d:{ja:'3分 切れ負け（オンライン最多）',en:'3 min, no increment (most played online)'}, inc:0, stages:[{moves:0,base:180}]},
+  {id:'z32',  g:'blitz',  t:{ja:'3 | 2',en:'3 | 2'}, d:{ja:'3分 + 2秒加算（FIDE公式）',en:'3 min + 2 sec (FIDE blitz)'},                    inc:2, stages:[{moves:0,base:180}]},
+  {id:'z5',   g:'blitz',  t:{ja:'5分',en:'5 min'},   d:{ja:'5分 切れ負け（対面の定番）',en:'5 min, no increment (club standard)'},          inc:0, stages:[{moves:0,base:300}]},
 
-  {id:'r10',   g:'ラピッド',   t:'10分',     d:'10分 切れ負け',               inc:0,  stages:[{moves:0,base:600}]},
-  {id:'r1510', g:'ラピッド',   t:'15 | 10',  d:'15分 + 10秒加算（FIDE公式）',  inc:10, stages:[{moves:0,base:900}]},
-  {id:'r30',   g:'ラピッド',   t:'30分',     d:'30分 切れ負け',               inc:0,  stages:[{moves:0,base:1800}]},
+  {id:'r10',  g:'rapid',  t:{ja:'10分',en:'10 min'},   d:{ja:'10分 切れ負け',en:'10 min, no increment'},                  inc:0,  stages:[{moves:0,base:600}]},
+  {id:'r1510',g:'rapid',  t:{ja:'15 | 10',en:'15 | 10'},d:{ja:'15分 + 10秒加算（FIDE公式）',en:'15 min + 10 sec (FIDE rapid)'}, inc:10, stages:[{moves:0,base:900}]},
+  {id:'r30',  g:'rapid',  t:{ja:'30分',en:'30 min'},   d:{ja:'30分 切れ負け',en:'30 min, no increment'},                  inc:0,  stages:[{moves:0,base:1800}]},
 
-  {id:'fide',  g:'クラシカル', t:'90 | 30 ・40手', d:'90分/40手 + 30分 + 30秒加算（FIDE標準）', inc:30, stages:[{moves:40,base:5400},{moves:0,base:1800}]},
-  {id:'wcc',   g:'クラシカル', t:'120 | 30 ・40手',d:'120分/40手 + 30分 + 30秒加算',           inc:30, stages:[{moves:40,base:7200},{moves:0,base:1800}]},
-  {id:'single',g:'クラシカル', t:'90 | 30',  d:'90分 + 30秒加算',             inc:30, stages:[{moves:0,base:5400}]},
+  {id:'fide', g:'classical', t:{ja:'90 | 30 ・40手',en:'90 | 30 · 40 moves'},
+              d:{ja:'90分/40手 + 30分 + 30秒加算（FIDE標準）',en:'90 min/40 moves + 30 min, 30 sec increment (FIDE standard)'},
+              inc:30, stages:[{moves:40,base:5400},{moves:0,base:1800}]},
+  {id:'wcc',  g:'classical', t:{ja:'120 | 30 ・40手',en:'120 | 30 · 40 moves'},
+              d:{ja:'120分/40手 + 30分 + 30秒加算',en:'120 min/40 moves + 30 min, 30 sec increment'},
+              inc:30, stages:[{moves:40,base:7200},{moves:0,base:1800}]},
+  {id:'single',g:'classical',t:{ja:'90 | 30',en:'90 | 30'}, d:{ja:'90分 + 30秒加算',en:'90 min + 30 sec'}, inc:30, stages:[{moves:0,base:5400}]},
 
-  {id:'custom',g:'その他',     t:'カスタム',  d:'自分で設定する',              custom:true}
+  {id:'custom',g:'other', t:{ja:'カスタム',en:'Custom'}, d:{ja:'自分で設定する',en:'Set your own'}, custom:true}
 ];
 // 既定は 15|10。物理クロックはボタンを押す時間も持ち時間から引かれるので、
 // chess.com 既定の 10分（加算なし）より加算ありの方が実情に合う。
@@ -440,10 +491,10 @@ function render(){
   if(ms!==midSig){ midSig=ms; document.getElementById('mid').innerHTML=midSvg(inc, dir); }
 
   document.getElementById('status').textContent =
-    !started ? '天板のボタンを押すと反対側の時計が動きます'
-  : breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
+    !started ? t('startHint')
+  : breakMs>1000 ? t('breakTotal')+' '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
-  bp.textContent = paused ? '\u25B6\uFE0E 再開' : '\u23F8\uFE0E 休憩';
+  bp.textContent = paused ? '\u25B6\uFE0E '+t('resume') : '\u23F8\uFE0E '+t('pause');
   bp.style.opacity = (!started||over) ? .4 : 1;
 }
 
@@ -485,12 +536,12 @@ function buildPresets(){
     if(p.g!==group){
       group=p.g;
       const h=document.createElement('div');
-      h.className='grp'; h.textContent=group;
+      h.className='grp'; h.textContent=t(group);
       box.appendChild(h);
     }
     const d=document.createElement('div');
     d.className='opt'+(cfg.sel===p.id?' sel':'');
-    d.innerHTML='<div class="t">'+p.t+'</div><div class="d">'+p.d+'</div>';
+    d.innerHTML='<div class="t">'+L(p.t)+'</div><div class="d">'+L(p.d)+'</div>';
     d.onclick=()=>{ cfg.sel=p.id; buildPresets(); document.getElementById('customBox').classList.toggle('show',!!p.custom); };
     box.appendChild(d);
   });
@@ -530,7 +581,22 @@ document.getElementById('btnResume').onclick=resume;
 document.getElementById('btnSet').onclick=openSet;
 document.getElementById('btnCancel').onclick=()=>document.getElementById('setOv').classList.remove('show');
 document.getElementById('btnApply').onclick=applySet;
-document.getElementById('btnReset').onclick=()=>{ if(!started || confirm('対局をリセットしますか？')) reset(); };
+document.getElementById('btnReset').onclick=()=>{ if(!started || confirm(t('confirmReset'))) reset(); };
+// 表示言語を画面全体に反映する。data-i18n を持つ要素は textContent を差し替え、
+// 記号つきのボタンなど組み立てが要るものはここで個別に組む。
+function applyLang(){
+  document.documentElement.lang = lang();
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.getElementById('btnResume').textContent = '\u25B6\uFE0E '+t('resume');
+  document.getElementById('langJa').classList.toggle('sel', lang()==='ja');
+  document.getElementById('langEn').classList.toggle('sel', lang()==='en');
+  buildPresets();
+  render();
+}
+function setLang(v){ cfg.lang=v; save(); applyLang(); }
+document.getElementById('langJa').onclick=()=>setLang('ja');
+document.getElementById('langEn').onclick=()=>setLang('en');
+
 // ON のときだけドットを点灯させる（プリセットの選択表示と同じ作法）
 function syncSound(){
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
@@ -542,7 +608,7 @@ document.getElementById('soundOpt').onclick=()=>{
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
 
-reset(); tick();
+reset(); applyLang(); tick();
 
 /* ═══ オフライン対応 ════════════════════════════════ */
 if('serviceWorker' in navigator && location.protocol==='https:'){
