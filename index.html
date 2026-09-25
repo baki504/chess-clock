@@ -117,27 +117,62 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 #pauseOv .sub{font-size:13px;color:#8b95a5;margin-bottom:26px}
 #pauseOv .btn.wide{max-width:260px;width:100%;height:56px;font-size:17px}
 
-#setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#setOv h2{font-size:17px;margin:0 0 4px;align-self:flex-start}
-#setOv .hint{font-size:12px;color:#8b95a5;margin:0 0 16px;align-self:flex-start;line-height:1.6}
+/* 設定画面も本体と同じ質感で — 黒い筐体の上に液晶のセルが並ぶ */
+#setOv{justify-content:flex-start;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  background:linear-gradient(#15181c,#05070a)}
+#setOv h2{font-size:16px;font-weight:700;letter-spacing:.05em;color:#e7ecf3;
+  margin:0 0 4px;align-self:flex-start}
+#setOv .hint{font-size:12px;color:#7c8794;margin:0 0 16px;align-self:flex-start;line-height:1.6}
+
 #presets{width:100%;max-width:440px;display:flex;flex-direction:column}
-.grp{font-size:11px;font-weight:700;letter-spacing:.12em;color:#6b7887;
-  margin:15px 0 7px;padding-left:3px}
+/* 筐体へのシルク印刷のような見出し */
+.grp{font-size:10px;font-weight:700;letter-spacing:.2em;color:#79838f;
+  margin:16px 0 6px;padding-left:2px}
 .grp:first-child{margin-top:0}
-.opt{width:100%;max-width:440px;background:#161b22;border:1.5px solid #262e3a;border-radius:14px;
-  padding:12px 15px;margin-bottom:8px;display:flex;flex-direction:column;gap:3px}
-.opt.sel{border-color:#3b82f6;background:#132033}
-.opt .t{font-size:15px;font-weight:600}
-.opt .d{font-size:12px;color:#93a0b1}
-#customBox{width:100%;max-width:440px;display:none;gap:8px;flex-direction:column;margin:2px 0 10px}
+
+/* 選択肢そのものを液晶のセルに見立てる */
+.opt{width:100%;max-width:440px;position:relative;cursor:pointer;
+  display:flex;flex-direction:column;gap:2px;
+  padding:11px 36px 11px 14px;margin-bottom:7px;border-radius:5px;
+  background:linear-gradient(168deg,#c4c8c4 0%,#b7bbb7 46%,#abafab 100%);
+  box-shadow:inset 0 2px 6px rgba(22,26,22,.34),inset 0 0 0 1px rgba(0,0,0,.42);
+  transition:background .12s ease}
+.opt .t{font-size:15px;font-weight:700;color:#141813}
+.opt .d{font-size:12px;color:#4e564e}
+/* 実機の basic / bonus / delay と同じ、選択位置を示すドット */
+.opt::after{content:'';position:absolute;right:13px;top:50%;margin-top:-5px;
+  width:10px;height:10px;border-radius:50%;background:#141813;opacity:.11;
+  transition:opacity .12s ease}
+.opt.sel{background:linear-gradient(168deg,#dde3d6 0%,#d0d7c8 46%,#c4ccbb 100%)}
+.opt.sel::after{opacity:1}
+
+#customBox{width:100%;max-width:440px;display:none;gap:7px;flex-direction:column;margin:1px 0 10px}
 #customBox.show{display:flex}
-.row{display:flex;align-items:center;justify-content:space-between;background:#12161c;
-  border-radius:11px;padding:10px 14px;font-size:14px;color:#cbd5e1}
-.row input{width:86px;background:#1e252f;border:1px solid #2d3643;color:#fff;border-radius:8px;
-  padding:8px 10px;font-size:16px;text-align:right;font-family:inherit}
-#setOv .actions{width:100%;max-width:440px;display:flex;gap:10px;margin-top:12px;padding-bottom:20px}
-#setOv .actions .btn{flex:1;justify-content:center;height:50px}
-.toggle{width:100%;max-width:440px;margin-bottom:8px}
+.row{display:flex;align-items:center;justify-content:space-between;
+  background:linear-gradient(#090b0d,#171b20);border-radius:9px;padding:9px 13px;
+  font-size:14px;color:#aab3bd;box-shadow:inset 0 2px 6px rgba(0,0,0,.8)}
+.row input{width:88px;border:none;border-radius:4px;padding:7px 10px;
+  font-size:16px;font-weight:700;text-align:right;font-family:inherit;color:#141813;
+  background:linear-gradient(168deg,#c4c8c4,#b0b4b0);
+  box-shadow:inset 0 2px 5px rgba(22,26,22,.42),inset 0 0 0 1px rgba(0,0,0,.4)}
+#setOv .actions{width:100%;max-width:440px;display:flex;gap:10px;margin-top:14px;padding-bottom:20px}
+#setOv .actions .btn{flex:1;height:50px}
+.toggle{width:100%;max-width:440px;margin-bottom:7px}
+
+/* ホバーはマウス環境だけ。タップ後に状態が残らないよう pointer:fine に限定する */
+@media (hover:hover) and (pointer:fine){
+  .btn:hover{transform:translateY(-4px);
+    box-shadow:0 6px 0 #a7adb4,0 9px 14px rgba(0,0,0,.55),inset 0 1px 0 #fff}
+  /* :hover の後に再宣言して、押下中は必ず沈むようにする */
+  .btn:active{transform:translateY(2px);
+    box-shadow:0 1px 0 #a7adb4,0 2px 4px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7)}
+  .opt:hover{background:linear-gradient(168deg,#d2d6d2 0%,#c5c9c5 46%,#b9bdb9 100%)}
+  .opt:hover::after{opacity:.32}
+  .opt.sel:hover{background:linear-gradient(168deg,#e7ede0 0%,#dae1d2 46%,#ced6c5 100%)}
+  .opt.sel:hover::after{opacity:1}
+  .row input:hover,.row input:focus{outline:none;
+    background:linear-gradient(168deg,#d2d6d2,#bec2be)}
+}
 </style>
 </head>
 <body>
@@ -464,7 +499,7 @@ function openSet(){
   buildPresets();
   const c=cfg.custom;
   cBase.value=c.base; cInc.value=c.inc; cMoves.value=c.moves; cAdd.value=c.add;
-  document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
+  syncSound();
   document.getElementById('setOv').classList.add('show');
 }
 function applySet(){
@@ -494,9 +529,13 @@ document.getElementById('btnSet').onclick=openSet;
 document.getElementById('btnCancel').onclick=()=>document.getElementById('setOv').classList.remove('show');
 document.getElementById('btnApply').onclick=applySet;
 document.getElementById('btnReset').onclick=()=>{ if(!started || confirm('対局をリセットしますか？')) reset(); };
-document.getElementById('soundOpt').onclick=()=>{
-  cfg.sound=!cfg.sound; save();
+// ON のときだけドットを点灯させる（プリセットの選択表示と同じ作法）
+function syncSound(){
   document.getElementById('soundState').textContent=cfg.sound?'ON':'OFF';
+  document.getElementById('soundOpt').classList.toggle('sel', cfg.sound);
+}
+document.getElementById('soundOpt').onclick=()=>{
+  cfg.sound=!cfg.sound; save(); syncSound();
 };
 document.addEventListener('gesturestart',e=>e.preventDefault());
 document.addEventListener('dblclick',e=>e.preventDefault());
