@@ -34,7 +34,7 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
    押した側はフラットに寝たまま動かさず、動作中の側だけが
    中央の合わせ目を支点に、外側の端へ向かって斜めに持ち上がる。
    下には決して沈まないので液晶部分に重なることがない。 */
-#deck{height:66px;padding:21px 8px 10px;margin-bottom:9px;
+#deck{height:83px;padding:21px 8px 10px;margin-bottom:9px;
   border-radius:13px;background:linear-gradient(#090b0d,#171b20);
   box-shadow:inset 0 2px 7px rgba(0,0,0,.85)}
 #rocker{height:100%;display:flex}
@@ -68,8 +68,9 @@ html,body{height:100%;margin:0;background:#000;color:#fff;overflow:hidden;
 #panel::after{content:'';position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(104deg,rgba(255,255,255,.13) 0%,rgba(255,255,255,.04) 36%,rgba(255,255,255,0) 58%)}
 
+/* 液晶は表示専用。手番の切り替えは天板のロッカーだけが受け付ける */
 .pane{flex:1;min-width:0;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;opacity:.4;transition:opacity .15s ease}
+  opacity:.4;transition:opacity .15s ease}
 .pane.pre{opacity:.6}
 .pane.run{opacity:1}
 #mid{flex:0 0 13%;min-width:34px;display:flex;align-items:center;justify-content:center;opacity:.9}
@@ -439,7 +440,7 @@ function render(){
   if(ms!==midSig){ midSig=ms; document.getElementById('mid').innerHTML=midSvg(inc, dir); }
 
   document.getElementById('status').textContent =
-    !started ? 'タップすると反対側の時計が動きます'
+    !started ? '天板のボタンを押すと反対側の時計が動きます'
   : breakMs>1000 ? '休憩合計 '+fmtShort(breakMs) : '';
   const bp=document.getElementById('btnPause');
   bp.textContent = paused ? '\u25B6\uFE0E 再開' : '\u23F8\uFE0E 休憩';
@@ -520,7 +521,8 @@ function applySet(){
 }
 
 /* ═══ 入力 ══════════════════════════════════════════ */
-for(const [id,i] of [['p0',0],['p1',1],['pl0',0],['pl1',1]]){
+// 手番の切り替えは天板のロッカーのみ。液晶に触れても動かない（誤操作防止）
+for(const [id,i] of [['pl0',0],['pl1',1]]){
   document.getElementById(id).addEventListener('pointerdown',e=>{e.preventDefault();tap(i);});
 }
 document.getElementById('btnPause').onclick=()=>paused?resume():pause();
